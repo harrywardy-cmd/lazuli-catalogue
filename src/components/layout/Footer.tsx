@@ -61,7 +61,7 @@ export default function Footer() {
                 alt="Lazuli"
                 width={42}
                 height={48}
-                className="h-10 w-auto object-contain brightness-0 invert"
+                className="h-10 w-auto object-contain"
               />
 
               <div className="ml-3 leading-none">
