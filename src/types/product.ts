@@ -8,4 +8,7 @@ export type Product = {
   imageUrl?: string;
   category?: string;
   stock: number;
+
+  featured?: boolean;
+  trending?: boolean;
 };

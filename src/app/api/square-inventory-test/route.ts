@@ -4,7 +4,7 @@ import { getSquareInventory } from "@/lib/square/inventory";
 export async function GET() {
   try {
     const variationIds = [
-      "RPR6C7WCWG3JGI6YDT45CXJP",
+      "5AZ4EOFHSGATUEUN3RNWFEHB",
     ];
 
     const inventory = await getSquareInventory(variationIds);

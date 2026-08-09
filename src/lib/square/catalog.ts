@@ -2,6 +2,7 @@ import { squareClient } from "./client";
 import { mapSquareCatalog } from "./mapper";
 import { getSquareInventory } from "./inventory";
 import type { Product } from "@/types/product";
+import { featuredProducts, trendingProducts } from "@/lib/catalogue/config";
 
 export async function getSquareCatalog(): Promise<Product[]> {
   const response = await squareClient.catalog.list({
@@ -25,5 +26,7 @@ export async function getSquareCatalog(): Promise<Product[]> {
   return products.map((product) => ({
     ...product,
     stock: inventory.get(product.variationId) ?? 0,
+    featured: featuredProducts.includes(product.id),
+    trending: trendingProducts.includes(product.id),
   }));
 }
