@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
-import { getSquareCatalog } from "@/lib/square/catalog";
+import { getSquareInventory } from "@/lib/square/inventory";
 
 export async function GET() {
   try {
-    const products = await getSquareCatalog();
+    const variationIds = [
+      "RPR6C7WCWG3JGI6YDT45CXJP",
+    ];
+
+    const inventory = await getSquareInventory(variationIds);
 
     return NextResponse.json({
       success: true,
-      products,
+      inventory,
     });
   } catch (error: any) {
-    console.error("Square API error:", error);
+    console.error("Square Inventory API error:", error);
 
     return NextResponse.json(
       {
