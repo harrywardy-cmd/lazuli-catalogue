@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import ProductCard from "@/components/catalogue/ProductCard";
 
 type Product = {
@@ -26,8 +25,12 @@ export default function CataloguePage() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured");
-  const [collectionFilter, setCollectionFilter] = useState("All");
+  const [collectionFilter, setCollectionFilter] =
+    useState("All");
 
+  /*
+   * Load products from the Square API.
+   */
   useEffect(() => {
     async function loadProducts() {
       try {
@@ -52,8 +55,8 @@ export default function CataloguePage() {
   }, []);
 
   /*
-   * Build the category list dynamically from the
-   * categories returned by Square.
+   * Build the category list dynamically
+   * from the products returned by Square.
    */
   const categories = [
     "All",
@@ -61,7 +64,10 @@ export default function CataloguePage() {
       new Set(
         products
           .map((product) => product.category)
-          .filter((category): category is string => Boolean(category)),
+          .filter(
+            (category): category is string =>
+              Boolean(category),
+          ),
       ),
     ),
   ];
@@ -71,22 +77,39 @@ export default function CataloguePage() {
    */
   const filteredProducts = [...products]
     .filter((product) => {
-      // Search
+      /*
+       * Search
+       */
       const matchesSearch = product.name
         .toLowerCase()
         .includes(search.toLowerCase());
 
-      // Category
+      /*
+       * Category
+       */
       const matchesCategory =
-        selectedCategory === "All" || product.category === selectedCategory;
+        selectedCategory === "All" ||
+        product.category === selectedCategory;
 
-      // Featured / Trending
+      /*
+       * Collection
+       *
+       * All       → show everything
+       * Featured  → featured products only
+       * Trending  → trending products only
+       */
       const matchesCollection =
         collectionFilter === "All" ||
-        (collectionFilter === "Featured" && product.featured) ||
-        (collectionFilter === "Trending" && product.trending);
+        (collectionFilter === "Featured" &&
+          product.featured) ||
+        (collectionFilter === "Trending" &&
+          product.trending);
 
-      return matchesSearch && matchesCategory && matchesCollection;
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesCollection
+      );
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -103,10 +126,12 @@ export default function CataloguePage() {
           return b.price - a.price;
 
         /*
-         * Featured products appear first.
+         * Featured products first.
          */
         case "featured":
-          return Number(b.featured) - Number(a.featured);
+          return (
+            Number(b.featured) - Number(a.featured)
+          );
 
         default:
           return 0;
@@ -119,7 +144,7 @@ export default function CataloguePage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8F7F4]">
-        <p className="text-sm tracking-wide text-[#514A78]">
+        <p className="text-sm tracking-wide text-[#5C28AD]">
           Loading collection...
         </p>
       </main>
@@ -132,80 +157,105 @@ export default function CataloguePage() {
   if (error) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8F7F4]">
-        <p className="text-sm text-red-500">{error}</p>
+        <div className="text-center">
+          <h1 className="text-lg font-medium text-[#29263A]">
+            Something went wrong
+          </h1>
+
+          <p className="mt-2 text-sm text-[#8A8697]">
+            {error}
+          </p>
+        </div>
       </main>
     );
   }
 
   return (
     <main className="min-h-screen bg-[#F8F7F4] text-[#29263A]">
-      {/* Header */}
-      <section className="px-6 pb-12 pt-20 md:px-10 lg:px-16">
+      {/* ================================================== */}
+      {/* HEADER */}
+      {/* ================================================== */}
+
+      <section className="bg-[#F8F7F4] px-5 pb-8 pt-14 sm:px-8 md:pb-10 md:pt-20">
         <div className="mx-auto max-w-7xl">
-          <p className="mb-4 text-xs font-medium uppercase tracking-[0.3em] text-[#514A78]">
+
+          {/* Eyebrow */}
+          <p className="text-center text-[10px] font-semibold uppercase tracking-[0.3em] text-[#5C28AD]">
             Lazuli Collection
           </p>
 
-          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight md:text-6xl">
-            Discover the collection.
+          {/* Heading */}
+          <h1 className="mt-3 text-center text-3xl font-semibold tracking-tight text-[#29263A] sm:text-4xl md:text-5xl">
+            Discover something special.
           </h1>
 
-          <p className="mt-5 max-w-2xl text-base leading-7 text-[#6E6A7D] md:text-lg">
-            Explore our curated selection of unique pieces, all available
-            through Lazuli.
+          {/* Description */}
+          <p className="mx-auto mt-3 max-w-xl text-center text-sm leading-6 text-[#8A8697]">
+            Explore our collection of unique pieces,
+            carefully selected and available through
+            Lazuli.
           </p>
 
-          {/* Search */}
-          <div className="mt-10 max-w-xl">
+          {/* ================================================== */}
+          {/* SEARCH */}
+          {/* ================================================== */}
+
+          <div className="mx-auto mt-8 max-w-2xl">
             <input
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search the collection..."
-              className="w-full rounded-full border border-[#DDD9E6] bg-white px-5 py-4 text-sm outline-none transition placeholder:text-[#9A96A7] focus:border-[#514A78]"
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
+              placeholder="Search products..."
+              className="h-12 w-full rounded-xl border border-[#E2DDEC] bg-white px-4 text-sm text-[#29263A] outline-none transition placeholder:text-[#AAA5B5] focus:border-[#5C28AD] focus:ring-2 focus:ring-[#5C28AD]/10"
             />
           </div>
 
-          {/* Collection Filters */}
-          <div className="mt-8">
-            <p className="mb-3 text-xs uppercase tracking-[0.2em] text-[#8A8697]">
-              Collection
-            </p>
+          {/* ================================================== */}
+          {/* COLLECTION FILTERS */}
+          {/* ================================================== */}
 
-            <div className="flex flex-wrap gap-2">
-              {["All", "Featured", "Trending"].map((filter) => (
-                <button
-                  key={filter}
-                  type="button"
-                  onClick={() => setCollectionFilter(filter)}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    collectionFilter === filter
-                      ? "bg-[#514A78] text-white"
-                      : "bg-white text-[#514A78] hover:bg-[#E9F8FA]"
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
+          <div className="mt-7">
+            <div className="flex justify-center gap-2 overflow-x-auto pb-1">
+              {["All", "Featured", "Trending"].map(
+                (filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() =>
+                      setCollectionFilter(filter)
+                    }
+                    className={`whitespace-nowrap rounded-lg px-4 py-2 text-xs font-medium transition ${
+                      collectionFilter === filter
+                        ? "bg-[#5C28AD] text-white shadow-sm"
+                        : "bg-white text-[#6E6A7D] hover:bg-[#E9F8FA]"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ),
+              )}
             </div>
           </div>
 
-          {/* Category Filters */}
-          <div className="mt-6">
-            <p className="mb-3 text-xs uppercase tracking-[0.2em] text-[#8A8697]">
-              Category
-            </p>
+          {/* ================================================== */}
+          {/* CATEGORIES */}
+          {/* ================================================== */}
 
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-5">
+            <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1">
               {categories.map((category) => (
                 <button
                   key={category}
                   type="button"
-                  onClick={() => setSelectedCategory(category)}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
+                  onClick={() =>
+                    setSelectedCategory(category)
+                  }
+                  className={`whitespace-nowrap rounded-lg px-3 py-2 text-xs transition ${
                     selectedCategory === category
-                      ? "bg-[#514A78] text-white"
-                      : "bg-white text-[#514A78] hover:bg-[#E9F8FA]"
+                      ? "bg-[#29263A] text-white"
+                      : "text-[#6E6A7D] hover:bg-white"
                   }`}
                 >
                   {category}
@@ -216,57 +266,95 @@ export default function CataloguePage() {
         </div>
       </section>
 
-      {/* Catalogue */}
-      <section className="px-6 pb-24 md:px-10 lg:px-16">
+      {/* ================================================== */}
+      {/* CATALOGUE */}
+      {/* ================================================== */}
+
+      <section className="px-5 pb-24 sm:px-8 md:px-10 lg:px-16">
         <div className="mx-auto max-w-7xl">
-          {/* Catalogue Toolbar */}
-          <div className="mb-8 flex flex-col gap-4 border-b border-[#DDD9E6] pb-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-[#6E6A7D]">
-              {filteredProducts.length}{" "}
-              {filteredProducts.length === 1 ? "item" : "items"}
+
+          {/* ================================================== */}
+          {/* TOOLBAR */}
+          {/* ================================================== */}
+
+          <div className="mb-6 flex items-center justify-between border-b border-[#E4DFEA] pb-4">
+
+            {/* Product Count */}
+            <p className="text-xs text-[#8A8697]">
+              <span className="font-medium text-[#29263A]">
+                {filteredProducts.length}
+              </span>{" "}
+              {filteredProducts.length === 1
+                ? "product"
+                : "products"}
             </p>
 
-            <div className="flex items-center gap-3">
+            {/* Sort */}
+            <div className="flex items-center gap-2">
               <label
                 htmlFor="sort"
-                className="text-xs uppercase tracking-[0.15em] text-[#8A8697]"
+                className="hidden text-xs text-[#8A8697] sm:block"
               >
-                Sort
+                Sort by
               </label>
 
               <select
                 id="sort"
                 value={sortBy}
-                onChange={(event) => setSortBy(event.target.value)}
-                className="rounded-full border border-[#DDD9E6] bg-white px-4 py-2 text-sm text-[#514A78] outline-none transition focus:border-[#514A78]"
+                onChange={(event) =>
+                  setSortBy(event.target.value)
+                }
+                className="rounded-lg border border-[#E2DDEC] bg-white px-3 py-2 text-xs text-[#514A78] outline-none transition focus:border-[#5C28AD]"
               >
-                <option value="featured">Featured</option>
+                <option value="featured">
+                  Featured
+                </option>
 
-                <option value="name-asc">Name A → Z</option>
+                <option value="name-asc">
+                  Name A → Z
+                </option>
 
-                <option value="name-desc">Name Z → A</option>
+                <option value="name-desc">
+                  Name Z → A
+                </option>
 
-                <option value="price-low">Price: Low → High</option>
+                <option value="price-low">
+                  Price: Low → High
+                </option>
 
-                <option value="price-high">Price: High → Low</option>
+                <option value="price-high">
+                  Price: High → Low
+                </option>
               </select>
             </div>
           </div>
 
-          {/* Product Grid */}
+          {/* ================================================== */}
+          {/* PRODUCT GRID */}
+          {/* ================================================== */}
+
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:gap-5">
               {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                />
               ))}
             </div>
           ) : (
-            /* Empty / No Results State */
-            <div className="py-24 text-center">
-              <h2 className="text-xl font-medium">No products found</h2>
+            /* ================================================== */
+            /* EMPTY STATE */
+            /* ================================================== */
 
-              <p className="mt-2 text-sm text-[#8A8697]">
-                Try adjusting your search or category filter.
+            <div className="py-24 text-center">
+              <h2 className="text-xl font-medium text-[#29263A]">
+                No products found
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#8A8697]">
+                Try adjusting your search or category
+                filters.
               </p>
 
               <button
@@ -277,7 +365,7 @@ export default function CataloguePage() {
                   setCollectionFilter("All");
                   setSortBy("featured");
                 }}
-                className="mt-6 rounded-full bg-[#514A78] px-5 py-2.5 text-sm text-white transition hover:bg-[#433D66]"
+                className="mt-6 rounded-lg bg-[#5C28AD] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#4D2194]"
               >
                 Clear filters
               </button>
