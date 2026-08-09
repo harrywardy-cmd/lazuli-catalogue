@@ -2,31 +2,80 @@ import { squareClient } from "./client";
 import { mapSquareCatalog } from "./mapper";
 import { getSquareInventory } from "./inventory";
 import type { Product } from "@/types/product";
-import { featuredProducts, trendingProducts } from "@/lib/catalogue/config";
+import {
+  featuredProducts,
+  trendingProducts,
+} from "@/lib/catalogue/config";
+import type { Square } from "square";
 
-export async function getSquareCatalog(): Promise<Product[]> {
-  const response = await squareClient.catalog.list({
+/*
+ * Retrieve the complete Square catalogue.
+ *
+ * Square paginates large catalogues, so we need to
+ * retrieve every page before mapping the products.
+ */
+async function getAllSquareCatalogObjects(): Promise<
+  Square.CatalogObject[]
+> {
+  const objects: Square.CatalogObject[] = [];
+
+  let page = await squareClient.catalog.list({
     types: "ITEM,ITEM_VARIATION,CATEGORY,IMAGE",
   });
 
-  const objects = response.data ?? [];
+  objects.push(...(page.data ?? []));
 
-  // First map the Square catalogue into our Product format.
+  /*
+   * Continue requesting pages until Square has
+   * no more catalogue objects.
+   */
+  while (page.hasNextPage()) {
+    page = await page.getNextPage();
+
+    objects.push(...(page.data ?? []));
+  }
+
+  return objects;
+}
+
+export async function getSquareCatalog(): Promise<Product[]> {
+  const objects =
+    await getAllSquareCatalogObjects();
+
+  // Map the complete Square catalogue.
   const products = mapSquareCatalog(objects);
 
   // Get the variation IDs we need inventory for.
   const variationIds = products.map(
-    (product) => product.variationId
+    (product) => product.variationId,
   );
 
-  // Retrieve the current inventory from Square.
-  const inventory = await getSquareInventory(variationIds);
+  // Retrieve current inventory from Square.
+  const inventory =
+    await getSquareInventory(variationIds);
 
-  // Add the real stock quantity to each product.
+  // Add inventory and Lazuli-specific flags.
   return products.map((product) => ({
     ...product,
-    stock: inventory.get(product.variationId) ?? 0,
-    featured: featuredProducts.includes(product.id),
-    trending: trendingProducts.includes(product.id),
+
+    stock:
+      inventory.get(product.variationId) ?? 0,
+
+    featured: featuredProducts.includes(
+      product.id,
+    ),
+
+    trending: trendingProducts.includes(
+      product.id,
+    ),
   }));
+}
+
+/*
+ * Return the complete raw Square catalogue.
+ *
+ * This is mainly useful for debugging.
+ */
+export async function getRawSquareCatalog() {
+  return getAllSquareCatalogObjects();
 }
