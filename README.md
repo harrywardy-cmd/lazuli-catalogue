@@ -1,77 +1,62 @@
 # Lazuli Catalogue
 
-A modern e-commerce catalogue website built for **Lazuli**, showcasing handmade jewellery, charms, keychains, and other curated pieces.
+A modern, responsive product catalogue website built for Lazuli.
 
-The project integrates with the **Square Catalog API** to retrieve product information and uses **Resend** to handle customer enquiries through the contact form.
-
-## ✨ Features
-
-- 🛍️ **Product Catalogue**
-  - Browse products retrieved from the Square Catalog API
-  - Product images, pricing, categories, and stock availability
-  - Individual product detail pages
-
-- ⭐ **Featured & Trending Products**
-  - Highlight featured products
-  - Display trending products throughout the storefront
-  - Rotating featured products on the homepage
-
-- ❤️ **Favourites**
-  - Add products to favourites
-  - Remove products from favourites
-  - View all saved favourites
-  - Favourites persist using `localStorage`
-
-- 🔎 **Catalogue Experience**
-  - Category filtering
-  - Product browsing
-  - Responsive product grid
-  - Stock availability indicators
-
-- 📧 **Contact Form**
-  - Customer enquiry form
-  - Sends enquiries using Resend
-  - Messages are delivered to the Lazuli email inbox
-  - Customer email is configured as the reply-to address
-  - Success and error feedback
-
-- 📱 **Responsive Design**
-  - Desktop navigation
-  - Mobile navigation
-  - Responsive product grids
-  - Mobile-friendly product pages
-
-- 🎨 **Lazuli Design System**
-  - Soft lavender colour palette
-  - Serif typography
-  - Minimal luxury-inspired layout
-  - Responsive cards and interactions
-  - Subtle animations and hover states
-
-- 🔒 **Secure API Integration**
-  - Square API credentials remain server-side
-  - Resend API credentials remain server-side
-  - Contact requests are processed through Next.js API routes
+The application provides a polished storefront experience backed by the **Square Catalog API**, with product discovery, favourites, featured and trending products, individual product pages, and a contact form powered by **Resend**.
 
 ---
 
-## 🛠️ Tech Stack
+## Overview
 
-| Technology | Purpose |
-|------------|---------|
-| **Next.js** | React framework and application routing |
-| **React** | User interface |
-| **TypeScript** | Type-safe development |
-| **Tailwind CSS** | Styling and responsive design |
-| **Square Catalog API** | Product catalogue data |
-| **Resend** | Contact form email delivery |
-| **Lucide React** | UI icons |
-| **React Icons** | Social media icons |
-| **Vercel** | Deployment |
+Lazuli Catalogue is a full-stack Next.js application designed to provide customers with a simple and elegant way to browse Lazuli's product collection.
+
+The project combines a minimal luxury-inspired interface with server-side integrations for catalogue data and customer enquiries.
+
+### Key Features
+
+- Product catalogue powered by Square
+- Featured and trending products
+- Individual product detail pages
+- Product categories and stock availability
+- Persistent browser-based favourites
+- Favourites dropdown in the navigation
+- Dedicated favourites page
+- Responsive desktop and mobile navigation
+- Contact form with email delivery
+- FAQ page
+- About page
+- Responsive design across desktop, tablet, and mobile
+- Reusable product cards and layout components
+- Server-side API routes for external services
 
 ---
 
-## 📁 Project Structure
+## Tech Stack
+
+### Frontend
+
+- **Next.js 16**
+- **React**
+- **TypeScript**
+- **Tailwind CSS**
+- **Lucide React**
+- **React Icons**
+
+### Backend & Integrations
+
+- **Square Catalog API** for product data
+- **Resend** for contact form emails
+- **Next.js API Routes** for server-side functionality
+
+### Deployment
+
+- **Vercel**
+
+---
+
+## Architecture
+
+The application uses the Next.js App Router and separates the interface into reusable components and service integrations.
 
 ```text
 src/
@@ -82,6 +67,9 @@ src/
 │   │   └── products/
 │   │       └── [id]/
 │   │           └── route.ts
+│   │
+│   ├── about/
+│   │   └── page.tsx
 │   │
 │   ├── catalogue/
 │   │   ├── [id]/
@@ -94,15 +82,11 @@ src/
 │   ├── faq/
 │   │   └── page.tsx
 │   │
-│   ├── about/
-│   │   └── page.tsx
-│   │
 │   ├── favourites/
 │   │   └── page.tsx
 │   │
-│   ├── page.tsx
 │   ├── layout.tsx
-│   └── globals.css
+│   └── page.tsx
 │
 ├── components/
 │   ├── catalogue/
