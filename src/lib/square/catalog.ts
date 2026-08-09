@@ -1,5 +1,6 @@
 import { squareClient } from "./client";
 import { mapSquareCatalog } from "./mapper";
+import { getSquareInventory } from "./inventory";
 import type { Product } from "@/types/product";
 
 export async function getSquareCatalog(): Promise<Product[]> {
@@ -7,5 +8,22 @@ export async function getSquareCatalog(): Promise<Product[]> {
     types: "ITEM,ITEM_VARIATION,CATEGORY,IMAGE",
   });
 
-  return mapSquareCatalog(response.data ?? []);
+  const objects = response.data ?? [];
+
+  // First map the Square catalogue into our Product format.
+  const products = mapSquareCatalog(objects);
+
+  // Get the variation IDs we need inventory for.
+  const variationIds = products.map(
+    (product) => product.variationId
+  );
+
+  // Retrieve the current inventory from Square.
+  const inventory = await getSquareInventory(variationIds);
+
+  // Add the real stock quantity to each product.
+  return products.map((product) => ({
+    ...product,
+    stock: inventory.get(product.variationId) ?? 0,
+  }));
 }
