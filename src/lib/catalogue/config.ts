@@ -1,6 +1,12 @@
 export const featuredProducts = [
   "5AZ4EOFHSGATUEUN3RNWFEHB",
+  "GUDRM63R5TWRNOQONCTOMPFQ",
+  "35FS5TGENYDY5QUPIH7KSISW",
 ];
 
-export const trendingProducts: string[] = [];
+export const trendingProducts= [
+  "MKMBFRRNWJMQZWCIJ6HNMUH6",
+  "SY27YQBGYOEYLZOZ5453MFEE",
+  "2Y6E5K343PIUEMKCT64Q6PFB",
+];
 
