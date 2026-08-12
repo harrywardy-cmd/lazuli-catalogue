@@ -1,4 +1,5 @@
 import Header from "@/components/layout/Header";
+import PageTransition from "@/components/layout/PageTransition";
 import "./globals.css";
 
 export default function RootLayout({
@@ -11,7 +12,9 @@ export default function RootLayout({
       <body>
         <Header />
 
-        {children}
+        <PageTransition>
+          {children}
+        </PageTransition>
       </body>
     </html>
   );

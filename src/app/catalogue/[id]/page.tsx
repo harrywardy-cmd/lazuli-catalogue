@@ -435,6 +435,58 @@ export default function ProductPage() {
                 Product view
               </span>
             </div>
+            {/* Product details */}
+
+            <div className="mt-8 border-y border-[#E5DFE9]">
+              <div className="flex items-center justify-between py-4">
+                <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
+                  Category
+                </span>
+
+                <span className="text-xs text-[#29205C]">
+                  {product.category ?? "Lazuli Collection"}
+                </span>
+              </div>
+
+              <div className="border-t border-[#EDE8EF] flex items-center justify-between py-4">
+                <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
+                  Availability
+                </span>
+
+                <span
+                  className={
+                    isAvailable
+                      ? "text-xs text-[#477D5D]"
+                      : "text-xs text-[#81778D]"
+                  }
+                >
+                  {isAvailable
+                    ? `${selectedVariation.stock} available`
+                    : "Unavailable"}
+                </span>
+              </div>
+
+              <div className="border-t border-[#EDE8EF] flex items-center justify-between py-4">
+                <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
+                  Product ID
+                </span>
+
+                <span className="max-w-[180px] truncate text-xs text-[#81778D]">
+                  {product.id}
+                </span>
+              </div>
+
+              <div className="flex items-start justify-between gap-8 border-t border-[#EDE8EF] py-4">
+                <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
+                  About this piece
+                </span>
+
+                <span className="flex-1 text-right text-xs leading-6 text-[#81778D]">
+                  {product.description ??
+                    "Explore this carefully selected piece from the Lazuli collection."}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* ===================================
@@ -584,61 +636,7 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* Description */}
-
-            {product.description && (
-              <div className="mt-8 border-t border-[#E5DFE9] pt-7">
-                <p className="text-[8px] font-medium uppercase tracking-[0.28em] text-[#6539B8]">
-                  About this piece
-                </p>
-
-                <p className="mt-4 max-w-xl font-serif text-sm leading-7 text-[#70687A]">
-                  {product.description}
-                </p>
-              </div>
-            )}
-
-            {/* Product details */}
-
-            <div className="mt-8 border-y border-[#E5DFE9]">
-              <div className="flex items-center justify-between py-4">
-                <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
-                  Category
-                </span>
-
-                <span className="text-xs text-[#29205C]">
-                  {product.category ?? "Lazuli Collection"}
-                </span>
-              </div>
-
-              <div className="border-t border-[#EDE8EF] flex items-center justify-between py-4">
-                <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
-                  Availability
-                </span>
-
-                <span
-                  className={
-                    isAvailable
-                      ? "text-xs text-[#477D5D]"
-                      : "text-xs text-[#81778D]"
-                  }
-                >
-                  {isAvailable
-                    ? `${selectedVariation.stock} available`
-                    : "Unavailable"}
-                </span>
-              </div>
-
-              <div className="border-t border-[#EDE8EF] flex items-center justify-between py-4">
-                <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
-                  Product ID
-                </span>
-
-                <span className="max-w-[180px] truncate text-xs text-[#81778D]">
-                  {product.id}
-                </span>
-              </div>
-            </div>
+            <div className="mt-8 border-t border-[#E5DFE9] pt-7"></div>
 
             {/* CTA */}
 
@@ -829,31 +827,6 @@ export default function ProductPage() {
             </div>
           </aside>
         </div>
-
-        {/* =====================================
-            DESCRIPTION PANEL
-        ====================================== */}
-
-        <section className="mt-8 rounded-[1rem] border border-[#E4DDE9] bg-white">
-          <div className="grid lg:grid-cols-[180px_1fr]">
-            <div className="border-b border-[#E9E3ED] p-6 lg:border-b-0 lg:border-r">
-              <p className="text-[8px] font-medium uppercase tracking-[0.28em] text-[#6539B8]">
-                Details
-              </p>
-
-              <h2 className="mt-2 font-serif text-xl text-[#29205C]">
-                About this piece
-              </h2>
-            </div>
-
-            <div className="p-6 lg:p-8">
-              <p className="max-w-3xl text-sm leading-7 text-[#70687A]">
-                {product.description ??
-                  "Explore this carefully selected piece from the Lazuli collection."}
-              </p>
-            </div>
-          </div>
-        </section>
 
         {/* =====================================
             BACK TO CATALOGUE

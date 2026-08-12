@@ -13,15 +13,46 @@ export default function FeaturedProducts({
   products,
 }: FeaturedProductsProps) {
   /*
-   * Display the newest products.
+   * =========================================
+   * FILTER AVAILABLE PRODUCTS
+   * =========================================
    *
-   * The Square catalogue is already returned in the
-   * order we want to display, so we take the first
-   * nine products.
+   * Only display products that are currently
+   * available.
    *
-   * This gives us a 3 × 3 desktop grid.
+   * A product with variations is considered
+   * available when at least one variation has
+   * stock remaining.
+   *
+   * Products without variations fall back to
+   * their main stock value.
    */
-  const newestProducts = products.slice(0, 6);
+  const availableProducts = products.filter(
+    (product) => {
+      const totalVariationStock =
+        product.variations?.reduce(
+          (total, variation) =>
+            total + variation.stock,
+          0,
+        ) ?? product.stock;
+
+      return totalVariationStock > 0;
+    },
+  );
+
+  /*
+   * =========================================
+   * NEWEST PRODUCTS
+   * =========================================
+   *
+   * The Square catalogue is already returned in
+   * the order we want to display.
+   *
+   * Filter unavailable products first, then
+   * take the first six available products.
+   */
+  const newestProducts =
+    availableProducts.slice(0, 6);
 
   /*
    * Don't render the section if there are

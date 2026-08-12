@@ -11,6 +11,7 @@ import { useState } from "react";
 import FavouritesMenu from "@/components/favourites/FavouritesMenu";
 
 const navigation = [
+  { name: "Home", href: "/" },
   { name: "Catalogue", href: "/catalogue" },
   { name: "About Us", href: "/about" },
   { name: "Contact", href: "/contact" },
@@ -43,7 +44,7 @@ export default function Header() {
         <Link
           href="/"
           onClick={closeMenu}
-          className="flex shrink-0 items-center"
+          className="group flex shrink-0 items-center"
           aria-label="Lazuli Online Shop"
         >
           <div className="flex items-center gap-2">
@@ -54,7 +55,14 @@ export default function Header() {
               width={34}
               height={42}
               priority
-              className="h-9 w-auto object-contain"
+              className="
+                h-9
+                w-auto
+                object-contain
+                transition-transform
+                duration-300
+                group-hover:scale-[1.03]
+              "
             />
 
             <div className="leading-none">
@@ -79,26 +87,58 @@ export default function Header() {
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-9 lg:flex">
 
           {navigation.map((item) => {
+            const isHome =
+              item.href === "/" &&
+              pathname === "/";
+
             const isActive =
-              pathname.startsWith(
-                item.href,
-              );
+              item.href === "/"
+                ? isHome
+                : pathname.startsWith(
+                    item.href,
+                  );
 
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`relative py-2 text-[12px] font-medium tracking-wide transition-colors ${
-                  isActive
-                    ? "text-[#5C28AD]"
-                    : "text-[#29205C] hover:text-[#5C28AD]"
-                }`}
+                className={`
+                  group
+                  relative
+                  py-2
+                  text-[12px]
+                  font-medium
+                  tracking-wide
+                  transition-colors
+                  duration-300
+                  ${
+                    isActive
+                      ? "text-[#5C28AD]"
+                      : "text-[#29205C] hover:text-[#5C28AD]"
+                  }
+                `}
               >
                 {item.name}
 
-                {isActive && (
-                  <span className="absolute -bottom-1 left-1/2 h-px w-5 -translate-x-1/2 bg-[#5C28AD]" />
-                )}
+                {/* Animated underline */}
+
+                <span
+                  className={`
+                    absolute
+                    -bottom-1
+                    left-1/2
+                    h-px
+                    -translate-x-1/2
+                    bg-[#5C28AD]
+                    transition-all
+                    duration-300
+                    ${
+                      isActive
+                        ? "w-5 opacity-100"
+                        : "w-0 opacity-0 group-hover:w-5 group-hover:opacity-100"
+                    }
+                  `}
+                />
               </Link>
             );
           })}
@@ -131,7 +171,12 @@ export default function Header() {
             onClick={() =>
               setMenuOpen(!menuOpen)
             }
-            className="text-[#29205C] transition-colors hover:text-[#5C28AD]"
+            className="
+              text-[#29205C]
+              transition-colors
+              duration-300
+              hover:text-[#5C28AD]
+            "
           >
             {menuOpen ? (
               <X
@@ -154,41 +199,80 @@ export default function Header() {
           MOBILE NAVIGATION
       ========================================== */}
 
-      {menuOpen && (
-        <div className="border-t border-[#EEEAF3] bg-white lg:hidden">
+      <div
+        className={`
+          overflow-hidden
+          border-t
+          border-[#EEEAF3]
+          bg-white
+          transition-all
+          duration-300
+          ease-out
+          lg:hidden
+          ${
+            menuOpen
+              ? "max-h-[400px] opacity-100"
+              : "max-h-0 border-t-0 opacity-0"
+          }
+        `}
+      >
 
-          <nav className="px-6 py-5">
+        <nav className="px-6 py-5">
 
-            <div className="flex flex-col">
+          <div className="flex flex-col">
 
-              {navigation.map((item) => {
-                const isActive =
-                  pathname.startsWith(
-                    item.href,
-                  );
+            {navigation.map((item, index) => {
+              const isHome =
+                item.href === "/" &&
+                pathname === "/";
 
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={closeMenu}
-                    className={`border-b border-[#F1EEF5] py-4 text-sm transition-colors last:border-0 ${
+              const isActive =
+                item.href === "/"
+                  ? isHome
+                  : pathname.startsWith(
+                      item.href,
+                    );
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={closeMenu}
+                  style={{
+                    transitionDelay: menuOpen
+                      ? `${index * 35}ms`
+                      : "0ms",
+                  }}
+                  className={`
+                    border-b
+                    border-[#F1EEF5]
+                    py-4
+                    text-sm
+                    transition-all
+                    duration-300
+                    last:border-0
+                    ${
+                      menuOpen
+                        ? "translate-x-0 opacity-100"
+                        : "-translate-x-2 opacity-0"
+                    }
+                    ${
                       isActive
                         ? "font-medium text-[#5C28AD]"
                         : "text-[#29205C] hover:text-[#5C28AD]"
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                );
-              })}
+                    }
+                  `}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
 
-            </div>
+          </div>
 
-          </nav>
+        </nav>
 
-        </div>
-      )}
+      </div>
 
     </header>
   );

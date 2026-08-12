@@ -11,9 +11,20 @@ type ProductCardProps = {
 
 const FAVOURITES_KEY = "lazuli-favourites";
 
+type FavouriteProduct = {
+  id: string;
+  variationId?: string;
+  name: string;
+  variationName?: string;
+  price: number;
+  currency?: string;
+  imageUrl?: string;
+};
+
 export default function ProductCard({
   product,
 }: ProductCardProps) {
+
   /*
    * =========================================
    * PRODUCT STATUS
@@ -29,7 +40,57 @@ export default function ProductCard({
       ? "TRENDING"
       : null;
 
-  const inStock = product.stock > 0;
+  /*
+   * =========================================
+   * VARIATIONS
+   * =========================================
+   */
+
+  /*
+   * Determine whether this product has
+   * multiple Square variations.
+   */
+  const hasVariations =
+    product.variations &&
+    product.variations.length > 1;
+
+  /*
+   * Number of variations available.
+   */
+  const variationCount =
+    product.variations?.length ?? 0;
+
+  /*
+   * Show the first three variation images
+   * on the product card.
+   */
+  const visibleVariations =
+    product.variations?.slice(0, 3) ?? [];
+
+  /*
+   * Number of variations hidden behind
+   * the +N indicator.
+   */
+  const remainingVariations =
+    Math.max(
+      variationCount -
+        visibleVariations.length,
+      0,
+    );
+
+  /*
+   * Calculate the total stock across all
+   * variations.
+   */
+  const totalVariationStock =
+    product.variations?.reduce(
+      (total, variation) =>
+        total + variation.stock,
+      0,
+    ) ?? product.stock;
+
+  const inStock =
+    totalVariationStock > 0;
 
   /*
    * =========================================
@@ -44,21 +105,21 @@ export default function ProductCard({
    * =========================================
    * CHECK FAVOURITE STATUS
    * =========================================
-   *
-   * Read the current favourites from
-   * localStorage.
    */
+
   function checkFavouriteStatus() {
     try {
       const saved =
-        localStorage.getItem(FAVOURITES_KEY);
+        localStorage.getItem(
+          FAVOURITES_KEY,
+        );
 
       if (!saved) {
         setIsFavourite(false);
         return;
       }
 
-      const favourites: Product[] =
+      const favourites: FavouriteProduct[] =
         JSON.parse(saved);
 
       if (!Array.isArray(favourites)) {
@@ -66,11 +127,14 @@ export default function ProductCard({
         return;
       }
 
-      setIsFavourite(
+      const productIsFavourite =
         favourites.some(
           (favourite) =>
             favourite?.id === product.id,
-        ),
+        );
+
+      setIsFavourite(
+        productIsFavourite,
       );
     } catch (error) {
       console.error(
@@ -96,10 +160,8 @@ export default function ProductCard({
    * =========================================
    * LISTEN FOR CHANGES
    * =========================================
-   *
-   * This keeps every ProductCard synchronized
-   * when favourites are changed elsewhere.
    */
+
   useEffect(() => {
     function handleFavouritesUpdated() {
       checkFavouriteStatus();
@@ -136,12 +198,16 @@ export default function ProductCard({
 
     try {
       const saved =
-        localStorage.getItem(FAVOURITES_KEY);
+        localStorage.getItem(
+          FAVOURITES_KEY,
+        );
 
-      let favourites: Product[] = [];
+      let favourites:
+        FavouriteProduct[] = [];
 
       if (saved) {
-        const parsed = JSON.parse(saved);
+        const parsed =
+          JSON.parse(saved);
 
         if (Array.isArray(parsed)) {
           favourites = parsed;
@@ -154,29 +220,83 @@ export default function ProductCard({
             favourite?.id === product.id,
         );
 
-      let updatedFavourites: Product[];
+      let updatedFavourites:
+        FavouriteProduct[];
 
       if (alreadyFavourite) {
+
         /*
          * Remove the product.
          */
         updatedFavourites =
           favourites.filter(
             (favourite) =>
-              favourite?.id !== product.id,
+              favourite?.id !==
+              product.id,
           );
+
       } else {
+
         /*
-         * Add the complete product.
-         *
-         * This means the favourites page can
-         * render the same ProductCard without
-         * making another API request.
+         * Select the first variation that
+         * currently has stock.
          */
-        updatedFavourites = [
-          ...favourites,
-          product,
-        ];
+        const selectedVariation =
+          product.variations?.find(
+            (variation) =>
+              variation.stock > 0,
+          ) ??
+          product.variations?.[0];
+
+        /*
+         * Save the selected variation.
+         */
+        if (selectedVariation) {
+
+          const favouriteProduct:
+            FavouriteProduct = {
+              id: product.id,
+              variationId:
+                selectedVariation.id,
+              name: product.name,
+              variationName:
+                selectedVariation.name,
+              price:
+                selectedVariation.price,
+              currency:
+                selectedVariation.currency,
+              imageUrl:
+                selectedVariation.imageUrl ??
+                product.imageUrl,
+            };
+
+          updatedFavourites = [
+            ...favourites,
+            favouriteProduct,
+          ];
+
+        } else {
+
+          /*
+           * Fallback for products without
+           * variation information.
+           */
+          const favouriteProduct:
+            FavouriteProduct = {
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              currency:
+                product.currency,
+              imageUrl:
+                product.imageUrl,
+            };
+
+          updatedFavourites = [
+            ...favourites,
+            favouriteProduct,
+          ];
+        }
       }
 
       /*
@@ -184,21 +304,28 @@ export default function ProductCard({
        */
       localStorage.setItem(
         FAVOURITES_KEY,
-        JSON.stringify(updatedFavourites),
+        JSON.stringify(
+          updatedFavourites,
+        ),
       );
 
       /*
        * Update this card immediately.
        */
-      setIsFavourite(!alreadyFavourite);
+      setIsFavourite(
+        !alreadyFavourite,
+      );
 
       /*
-       * Tell the header, favourites page and
-       * other ProductCards that the list changed.
+       * Tell the rest of the application
+       * that favourites have changed.
        */
       window.dispatchEvent(
-        new Event("favourites-updated"),
+        new Event(
+          "favourites-updated",
+        ),
       );
+
     } catch (error) {
       console.error(
         "Unable to update favourites:",
@@ -212,6 +339,7 @@ export default function ProductCard({
       href={`/catalogue/${product.id}`}
       className="group block min-w-0"
     >
+
       {/* =====================================
           PRODUCT IMAGE
       ====================================== */}
@@ -302,6 +430,31 @@ export default function ProductCard({
           </div>
         )}
 
+        {/* =================================
+            VARIATION COUNT
+        ================================== */}
+
+        {hasVariations && (
+          <div className="absolute bottom-2.5 left-2.5">
+            <span
+              className="
+                rounded-[0.35rem]
+                bg-[#6539B8]/95
+                px-2
+                py-1
+                text-[7px]
+                font-semibold
+                uppercase
+                tracking-[0.08em]
+                text-white
+                shadow-sm
+              "
+            >
+              {variationCount} variations
+            </span>
+          </div>
+        )}
+
       </div>
 
       {/* =====================================
@@ -326,9 +479,21 @@ export default function ProductCard({
           {product.name}
         </h2>
 
-        {/* Price */}
+        {/* =================================
+            PRICE
+        ================================== */}
 
-        <p className="mt-0.5 text-[11px] font-semibold text-[#29205C]">
+        <p
+          className="
+            mt-0.5
+            text-[11px]
+            font-semibold
+            text-[#29205C]
+          "
+        >
+          {hasVariations
+            ? "From "
+            : ""}
           ${product.price.toFixed(2)}
         </p>
 
@@ -339,28 +504,127 @@ export default function ProductCard({
         <div className="mt-1.5 flex items-center gap-1.5">
 
           <span
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-              inStock
-                ? "bg-[#58B89A]"
-                : "bg-[#B7B2BF]"
-            }`}
+            className={`
+              h-1.5
+              w-1.5
+              shrink-0
+              rounded-full
+              ${
+                inStock
+                  ? "bg-[#58B89A]"
+                  : "bg-[#B7B2BF]"
+              }
+            `}
           />
 
           <span
-            className={`truncate text-[8px] ${
-              inStock
-                ? "text-[#817A8F]"
-                : "text-[#9A91A4]"
-            }`}
+            className={`
+              truncate
+              text-[8px]
+              ${
+                inStock
+                  ? "text-[#817A8F]"
+                  : "text-[#9A91A4]"
+              }
+            `}
           >
             {inStock
-              ? `${product.stock} available`
+              ? `${totalVariationStock} available`
               : "Out of stock"}
           </span>
 
         </div>
 
+        {/* =================================
+            VARIATION PREVIEWS
+        ================================== */}
+
+        {hasVariations && (
+          <div className="mt-2.5 flex items-center gap-1.5">
+
+            {visibleVariations.map(
+              (variation) => (
+                <div
+                  key={variation.id}
+                  title={variation.name}
+                  className="
+                    flex
+                    h-7
+                    w-7
+                    shrink-0
+                    items-center
+                    justify-center
+                    overflow-hidden
+                    rounded-full
+                    border
+                    border-[#E5DFE9]
+                    bg-[#F7F4F9]
+                    shadow-sm
+                    transition-all
+                    duration-200
+                    group-hover:border-[#CFC2DD]
+                  "
+                >
+                  {variation.imageUrl ? (
+                    <img
+                      src={variation.imageUrl}
+                      alt={variation.name}
+                      className="
+                        h-full
+                        w-full
+                        object-cover
+                      "
+                    />
+                  ) : (
+                    <span
+                      className="
+                        text-[7px]
+                        font-medium
+                        uppercase
+                        text-[#817A8F]
+                      "
+                    >
+                      {variation.name
+                        ?.charAt(0)
+                        .toUpperCase()}
+                    </span>
+                  )}
+                </div>
+              ),
+            )}
+
+            {/* Remaining variations */}
+
+            {remainingVariations > 0 && (
+              <div
+                className="
+                  flex
+                  h-7
+                  min-w-7
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-[#F0ECF4]
+                  px-2
+                  text-[8px]
+                  font-medium
+                  text-[#6E6678]
+                  transition-colors
+                  duration-200
+                  group-hover:bg-[#E9E1F0]
+                "
+                title={`${remainingVariations} more variations`}
+              >
+                +{remainingVariations}
+              </div>
+            )}
+
+          </div>
+        )}
+
       </div>
+
     </Link>
   );
 }

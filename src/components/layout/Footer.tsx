@@ -82,7 +82,7 @@ export default function Footer() {
             {/* Instagram */}
 
             <a
-              href="#"
+              href="https://www.instagram.com/lazuli_handmade/"
               aria-label="Instagram"
               className="
                 mt-7
