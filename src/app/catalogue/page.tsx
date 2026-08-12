@@ -530,72 +530,124 @@ export default function CataloguePage() {
 
             {/* Product grid */}
 
-            {paginatedProducts.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                {paginatedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-[#E5DFE9] bg-white py-24 text-center">
-                <Sparkles
-                  size={20}
-                  strokeWidth={1.2}
-                  className="mx-auto text-[#BCA9CC]"
-                />
+            <div
+              className="
+    min-h-[1900px]
+    sm:min-h-[1300px]
+    lg:min-h-[950px]
+    xl:min-h-[760px]
+    2xl:min-h-[620px]
+  "
+            >
+              {paginatedProducts.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-[#E5DFE9] bg-white py-24 text-center">
+                  <Sparkles
+                    size={20}
+                    strokeWidth={1.2}
+                    className="mx-auto text-[#BCA9CC]"
+                  />
 
-                <h2 className="mt-4 font-serif text-2xl text-[#29205C]">
-                  Nothing found
-                </h2>
+                  <h2 className="mt-4 font-serif text-2xl text-[#29205C]">
+                    Nothing found
+                  </h2>
 
-                <p className="mt-2 text-sm text-[#81778D]">
-                  Try changing your search or filters.
-                </p>
+                  <p className="mt-2 text-sm text-[#81778D]">
+                    Try changing your search or filters.
+                  </p>
 
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="mt-6 rounded-full bg-[#6539B8] px-6 py-3 text-[8px] font-medium uppercase tracking-[0.15em] text-white"
-                >
-                  Clear filters
-                </button>
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-6 rounded-full bg-[#6539B8] px-6 py-3 text-[8px] font-medium uppercase tracking-[0.15em] text-white transition hover:bg-[#5630A0]"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Pagination */}
 
             {totalPages > 1 && (
-              <div className="mt-10 flex items-center justify-center gap-2">
+              <div className="mt-10 flex h-9 items-center justify-center gap-2">
+                {/* Previous */}
+
                 <button
                   type="button"
                   disabled={currentPage === 1}
                   onClick={() =>
                     setCurrentPage((page) => Math.max(1, page - 1))
                   }
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E3DDE7] bg-white text-[#625B70] transition hover:border-[#6539B8] hover:text-[#6539B8] disabled:opacity-30"
+                  aria-label="Previous page"
+                  className="
+        flex
+        h-9
+        w-9
+        shrink-0
+        items-center
+        justify-center
+        rounded-full
+        border
+        border-[#E3DDE7]
+        bg-white
+        text-[#625B70]
+        transition
+        hover:border-[#6539B8]
+        hover:text-[#6539B8]
+        disabled:cursor-not-allowed
+        disabled:opacity-30
+      "
                 >
                   <ChevronLeft size={14} />
                 </button>
 
-                {Array.from(
-                  {
-                    length: totalPages,
-                  },
-                  (_, index) => index + 1,
-                ).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => setCurrentPage(page)}
-                    className={`flex h-9 min-w-9 items-center justify-center rounded-full px-2 text-[9px] font-medium transition ${
-                      currentPage === page
-                        ? "bg-[#6539B8] text-white shadow-[0_5px_15px_rgba(101,57,184,0.18)]"
-                        : "border border-[#E3DDE7] bg-white text-[#625B70] hover:border-[#6539B8] hover:text-[#6539B8]"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+                {/* Page numbers */}
+
+                <div className="flex h-9 items-center gap-2">
+                  {Array.from(
+                    {
+                      length: totalPages,
+                    },
+                    (_, index) => index + 1,
+                  ).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      aria-label={`Go to page ${page}`}
+                      aria-current={currentPage === page ? "page" : undefined}
+                      className={`
+            flex
+            h-9
+            min-w-9
+            shrink-0
+            items-center
+            justify-center
+            rounded-full
+            px-2
+            text-[9px]
+            font-medium
+            transition-all
+            duration-200
+            ${
+              currentPage === page
+                ? "bg-[#6539B8] text-white shadow-[0_5px_15px_rgba(101,57,184,0.18)]"
+                : "border border-[#E3DDE7] bg-white text-[#625B70] hover:border-[#6539B8] hover:text-[#6539B8]"
+            }
+          `}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Next */}
 
                 <button
                   type="button"
@@ -603,7 +655,25 @@ export default function CataloguePage() {
                   onClick={() =>
                     setCurrentPage((page) => Math.min(totalPages, page + 1))
                   }
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E3DDE7] bg-white text-[#625B70] transition hover:border-[#6539B8] hover:text-[#6539B8] disabled:opacity-30"
+                  aria-label="Next page"
+                  className="
+        flex
+        h-9
+        w-9
+        shrink-0
+        items-center
+        justify-center
+        rounded-full
+        border
+        border-[#E3DDE7]
+        bg-white
+        text-[#625B70]
+        transition
+        hover:border-[#6539B8]
+        hover:text-[#6539B8]
+        disabled:cursor-not-allowed
+        disabled:opacity-30
+      "
                 >
                   <ChevronRight size={14} />
                 </button>
