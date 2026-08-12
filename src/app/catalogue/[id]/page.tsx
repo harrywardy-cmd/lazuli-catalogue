@@ -14,7 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useParams } from "next/navigation";
-import Footer from "@/components/layout/Footer"
+import Footer from "@/components/layout/Footer";
 
 type Product = {
   id: string;
@@ -28,20 +28,103 @@ type Product = {
   stock: number;
 };
 
+type FavouriteProduct = {
+  id: string;
+  name: string;
+  price: number;
+  imageUrl?: string;
+};
+
+const FAVOURITES_KEY = "lazuli-favourites";
+
 export default function ProductPage() {
   const params = useParams();
 
-  const [product, setProduct] =
-    useState<Product | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const [isFavourite, setIsFavourite] =
-    useState(false);
+  const [isFavourite, setIsFavourite] = useState(false);
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    try {
+      const saved = localStorage.getItem(FAVOURITES_KEY);
+
+      if (!saved) {
+        return;
+      }
+
+      const favourites = JSON.parse(saved) as FavouriteProduct[];
+
+      setIsFavourite(
+        favourites.some((favourite) => favourite?.id === product.id),
+      );
+    } catch (error) {
+      console.error("Unable to load favourite:", error);
+    }
+  }, [product]);
+
+  function toggleFavourite() {
+    if (!product) {
+      return;
+    }
+
+    try {
+      const saved = localStorage.getItem(FAVOURITES_KEY);
+
+      const favourites: FavouriteProduct[] = saved ? JSON.parse(saved) : [];
+
+      const alreadyFavourite = favourites.some(
+        (favourite) => favourite?.id === product.id,
+      );
+
+      let updatedFavourites: FavouriteProduct[];
+
+      if (alreadyFavourite) {
+        /*
+         * Remove the product from favourites.
+         */
+        updatedFavourites = favourites.filter(
+          (favourite) => favourite?.id !== product.id,
+        );
+      } else {
+        /*
+         * Add the product to favourites.
+         */
+        const favouriteProduct: FavouriteProduct = {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          imageUrl: product.imageUrl,
+        };
+
+        updatedFavourites = [...favourites, favouriteProduct];
+      }
+
+      /*
+       * Save favourites to localStorage.
+       */
+      localStorage.setItem(FAVOURITES_KEY, JSON.stringify(updatedFavourites));
+
+      /*
+       * Update the current page immediately.
+       */
+      setIsFavourite(!alreadyFavourite);
+
+      /*
+       * Tell the header and other favourite
+       * components that the list changed.
+       */
+      window.dispatchEvent(new Event("favourites-updated"));
+    } catch (error) {
+      console.error("Unable to update favourites:", error);
+    }
+  }
 
   /*
    * =========================================
@@ -55,14 +138,10 @@ export default function ProductPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(
-          `/api/products/${params.id}`,
-        );
+        const response = await fetch(`/api/products/${params.id}`);
 
         if (!response.ok) {
-          throw new Error(
-            "Product not found",
-          );
+          throw new Error("Product not found");
         }
 
         const data = await response.json();
@@ -71,9 +150,7 @@ export default function ProductPage() {
       } catch (error) {
         console.error(error);
 
-        setError(
-          "Unable to load this product.",
-        );
+        setError("Unable to load this product.");
       } finally {
         setLoading(false);
       }
@@ -92,17 +169,13 @@ export default function ProductPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF9FB]">
         <div className="text-center">
-
           <div className="mx-auto mb-4 h-px w-10 bg-[#6539B8]" />
 
-          <p className="font-serif text-sm text-[#29205C]">
-            Loading piece...
-          </p>
+          <p className="font-serif text-sm text-[#29205C]">Loading piece...</p>
 
           <p className="mt-2 text-[8px] uppercase tracking-[0.3em] text-[#9A91A4]">
             Lazuli Collection
           </p>
-
         </div>
       </main>
     );
@@ -117,9 +190,7 @@ export default function ProductPage() {
   if (error || !product) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#FAF9FB] px-6">
-
         <div className="max-w-md text-center">
-
           <p className="text-[8px] uppercase tracking-[0.35em] text-[#6539B8]">
             Lazuli Collection
           </p>
@@ -129,8 +200,7 @@ export default function ProductPage() {
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-[#81778D]">
-            We couldn't find the piece you're
-            looking for.
+            We couldn't find the piece you're looking for.
           </p>
 
           <Link
@@ -138,12 +208,9 @@ export default function ProductPage() {
             className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#6539B8] px-6 py-3 text-[9px] font-medium uppercase tracking-[0.12em] text-white transition hover:bg-[#5630A0]"
           >
             <ArrowLeft size={13} />
-
             Back to catalogue
           </Link>
-
         </div>
-
       </main>
     );
   }
@@ -152,19 +219,16 @@ export default function ProductPage() {
 
   return (
     <main className="min-h-screen bg-[#FAF9FB]">
-
       {/* =========================================
           MAIN CONTENT
       ========================================== */}
 
       <section className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10">
-
         {/* =====================================
             BREADCRUMBS
         ====================================== */}
 
         <nav className="mb-7 flex items-center gap-2 overflow-hidden text-[8px] uppercase tracking-[0.16em] text-[#9A91A4]">
-
           <Link
             href="/"
             className="shrink-0 transition-colors hover:text-[#6539B8]"
@@ -193,10 +257,7 @@ export default function ProductPage() {
 
           <span>›</span>
 
-          <span className="truncate text-[#29205C]">
-            {product.name}
-          </span>
-
+          <span className="truncate text-[#29205C]">{product.name}</span>
         </nav>
 
         {/* =====================================
@@ -204,15 +265,12 @@ export default function ProductPage() {
         ====================================== */}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.8fr)_300px]">
-
           {/* ===================================
               PRODUCT IMAGE
           ==================================== */}
 
           <div className="relative">
-
             <div className="relative aspect-square overflow-hidden rounded-[1.25rem] border border-[#E4DDE9] bg-[#F4F1F6]">
-
               {product.imageUrl ? (
                 <Image
                   src={product.imageUrl}
@@ -224,28 +282,22 @@ export default function ProductPage() {
                 />
               ) : (
                 <div className="flex h-full items-center justify-center">
-
                   <div className="text-center">
-
                     <div className="mx-auto mb-3 h-px w-8 bg-[#D9D0E2]" />
 
                     <p className="text-[8px] uppercase tracking-[0.25em] text-[#9A91A4]">
                       No image available
                     </p>
-
                   </div>
-
                 </div>
               )}
 
               {/* Image overlay badge */}
 
               <div className="absolute left-5 top-5">
-
                 <span className="rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[7px] font-medium uppercase tracking-[0.25em] text-[#6539B8] shadow-sm backdrop-blur-md">
                   Lazuli Collection
                 </span>
-
               </div>
 
               {/* Favourite */}
@@ -253,15 +305,10 @@ export default function ProductPage() {
               <button
                 type="button"
                 aria-label={
-                  isFavourite
-                    ? "Remove from favourites"
-                    : "Add to favourites"
+                  isFavourite ? "Remove from favourites" : "Add to favourites"
                 }
-                onClick={() =>
-                  setIsFavourite(
-                    !isFavourite,
-                  )
-                }
+                aria-pressed={isFavourite}
+                onClick={toggleFavourite}
                 className={`absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/90 shadow-sm backdrop-blur-md transition-all duration-200 ${
                   isFavourite
                     ? "text-[#6539B8]"
@@ -271,20 +318,14 @@ export default function ProductPage() {
                 <Heart
                   size={17}
                   strokeWidth={1.4}
-                  fill={
-                    isFavourite
-                      ? "currentColor"
-                      : "none"
-                  }
+                  fill={isFavourite ? "currentColor" : "none"}
                 />
               </button>
-
             </div>
 
             {/* Image caption */}
 
             <div className="mt-3 flex items-center justify-between px-1">
-
               <p className="text-[7px] uppercase tracking-[0.28em] text-[#A19AA8]">
                 Lazuli / {product.category ?? "Collection"}
               </p>
@@ -292,9 +333,7 @@ export default function ProductPage() {
               <span className="text-[7px] uppercase tracking-[0.2em] text-[#A19AA8]">
                 Product view
               </span>
-
             </div>
-
           </div>
 
           {/* ===================================
@@ -302,18 +341,15 @@ export default function ProductPage() {
           ==================================== */}
 
           <div className="flex flex-col">
-
             {/* Category */}
 
             {product.category && (
               <div className="flex items-center gap-3">
-
                 <span className="h-px w-7 bg-[#6539B8]" />
 
                 <p className="text-[8px] font-medium uppercase tracking-[0.3em] text-[#6539B8]">
                   {product.category}
                 </p>
-
               </div>
             )}
 
@@ -326,7 +362,6 @@ export default function ProductPage() {
             {/* Price */}
 
             <div className="mt-6 flex items-center gap-4">
-
               <p className="text-xl font-medium text-[#6539B8]">
                 ${product.price.toFixed(2)}
               </p>
@@ -336,16 +371,13 @@ export default function ProductPage() {
               <p className="text-[9px] uppercase tracking-[0.18em] text-[#9A91A4]">
                 {product.currency}
               </p>
-
             </div>
 
             {/* Availability */}
 
             <div className="mt-6">
-
               {isAvailable ? (
                 <div className="inline-flex items-center gap-2 rounded-full border border-[#D7E8DE] bg-[#F0F8F3] px-3 py-1.5">
-
                   <span className="h-1.5 w-1.5 rounded-full bg-[#5AA276]" />
 
                   <span className="text-[8px] font-medium uppercase tracking-[0.15em] text-[#477D5D]">
@@ -355,27 +387,22 @@ export default function ProductPage() {
                   <span className="text-[8px] text-[#769180]">
                     · {product.stock} available
                   </span>
-
                 </div>
               ) : (
                 <div className="inline-flex items-center gap-2 rounded-full border border-[#E4DDE7] bg-[#F4F1F5] px-3 py-1.5">
-
                   <span className="h-1.5 w-1.5 rounded-full bg-[#9A91A4]" />
 
                   <span className="text-[8px] font-medium uppercase tracking-[0.15em] text-[#716A79]">
                     Currently unavailable
                   </span>
-
                 </div>
               )}
-
             </div>
 
             {/* Description */}
 
             {product.description && (
               <div className="mt-8 border-t border-[#E5DFE9] pt-7">
-
                 <p className="text-[8px] font-medium uppercase tracking-[0.28em] text-[#6539B8]">
                   About this piece
                 </p>
@@ -383,29 +410,23 @@ export default function ProductPage() {
                 <p className="mt-4 max-w-xl font-serif text-sm leading-7 text-[#70687A]">
                   {product.description}
                 </p>
-
               </div>
             )}
 
             {/* Product details */}
 
             <div className="mt-8 border-y border-[#E5DFE9]">
-
               <div className="flex items-center justify-between py-4">
-
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
                   Category
                 </span>
 
                 <span className="text-xs text-[#29205C]">
-                  {product.category ??
-                    "Lazuli Collection"}
+                  {product.category ?? "Lazuli Collection"}
                 </span>
-
               </div>
 
               <div className="border-t border-[#EDE8EF] flex items-center justify-between py-4">
-
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
                   Availability
                 </span>
@@ -417,15 +438,11 @@ export default function ProductPage() {
                       : "text-xs text-[#81778D]"
                   }
                 >
-                  {isAvailable
-                    ? `${product.stock} available`
-                    : "Unavailable"}
+                  {isAvailable ? `${product.stock} available` : "Unavailable"}
                 </span>
-
               </div>
 
               <div className="border-t border-[#EDE8EF] flex items-center justify-between py-4">
-
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6E6678]">
                   Product ID
                 </span>
@@ -433,21 +450,17 @@ export default function ProductPage() {
                 <span className="max-w-[180px] truncate text-xs text-[#81778D]">
                   {product.id}
                 </span>
-
               </div>
-
             </div>
 
             {/* CTA */}
 
             <div className="mt-auto pt-8">
-
               <Link
                 href="/contact"
                 className="group flex w-full items-center justify-center gap-3 rounded-full bg-[#6539B8] px-6 py-4 text-[9px] font-medium uppercase tracking-[0.16em] text-white shadow-[0_10px_30px_rgba(101,57,184,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#5630A0] hover:shadow-[0_14px_35px_rgba(101,57,184,0.22)]"
               >
                 Contact Lazuli
-
                 <ArrowRight
                   size={13}
                   strokeWidth={1.4}
@@ -458,9 +471,7 @@ export default function ProductPage() {
               <p className="mt-3 text-center text-[7px] uppercase tracking-[0.2em] text-[#A19AA8]">
                 Enquire about this piece
               </p>
-
             </div>
-
           </div>
 
           {/* ===================================
@@ -468,76 +479,50 @@ export default function ProductPage() {
           ==================================== */}
 
           <aside className="space-y-4">
-
             {/* Favourite card */}
 
             <div className="rounded-[1rem] border border-[#E4DDE9] bg-white p-4">
-
               <button
                 type="button"
-                onClick={() =>
-                  setIsFavourite(
-                    !isFavourite,
-                  )
-                }
+                aria-pressed={isFavourite}
+                onClick={toggleFavourite}
                 className="flex w-full items-center gap-4 text-left"
               >
-
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F0E8F8] text-[#6539B8]">
-
                   <Heart
                     size={18}
                     strokeWidth={1.4}
-                    fill={
-                      isFavourite
-                        ? "currentColor"
-                        : "none"
-                    }
+                    fill={isFavourite ? "currentColor" : "none"}
                   />
-
                 </div>
 
                 <div>
-
                   <p className="text-xs font-medium text-[#29205C]">
-                    {isFavourite
-                      ? "Saved to favourites"
-                      : "Add to favourites"}
+                    {isFavourite ? "Saved to favourites" : "Add to favourites"}
                   </p>
 
                   <p className="mt-1 text-[8px] leading-4 text-[#8A8293]">
                     Save this piece for later.
                   </p>
-
                 </div>
-
               </button>
-
             </div>
 
             {/* Highlights */}
 
             <div className="rounded-[1rem] border border-[#E4DDE9] bg-white p-5">
-
               <div className="flex items-center gap-3">
-
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F0E8F8] text-[#6539B8]">
-                  <Sparkles
-                    size={14}
-                    strokeWidth={1.3}
-                  />
+                  <Sparkles size={14} strokeWidth={1.3} />
                 </div>
 
                 <h2 className="font-serif text-lg text-[#29205C]">
                   Why Lazuli
                 </h2>
-
               </div>
 
               <div className="mt-5 space-y-4">
-
                 <div className="flex items-start gap-3">
-
                   <Check
                     size={14}
                     strokeWidth={1.5}
@@ -547,11 +532,9 @@ export default function ProductPage() {
                   <p className="text-[10px] leading-5 text-[#70687A]">
                     Carefully selected pieces
                   </p>
-
                 </div>
 
                 <div className="flex items-start gap-3">
-
                   <Check
                     size={14}
                     strokeWidth={1.5}
@@ -561,11 +544,9 @@ export default function ProductPage() {
                   <p className="text-[10px] leading-5 text-[#70687A]">
                     Unique designs and collections
                   </p>
-
                 </div>
 
                 <div className="flex items-start gap-3">
-
                   <Check
                     size={14}
                     strokeWidth={1.5}
@@ -575,11 +556,9 @@ export default function ProductPage() {
                   <p className="text-[10px] leading-5 text-[#70687A]">
                     Secure shopping powered by Square
                   </p>
-
                 </div>
 
                 <div className="flex items-start gap-3">
-
                   <Check
                     size={14}
                     strokeWidth={1.5}
@@ -589,25 +568,19 @@ export default function ProductPage() {
                   <p className="text-[10px] leading-5 text-[#70687A]">
                     Curated with care
                   </p>
-
                 </div>
-
               </div>
-
             </div>
 
             {/* Shopping information */}
 
             <div className="rounded-[1rem] border border-[#E4DDE9] bg-white p-5">
-
               <h2 className="font-serif text-lg text-[#29205C]">
                 Shopping information
               </h2>
 
               <div className="mt-5 space-y-4">
-
                 <div className="flex items-start gap-3">
-
                   <Package
                     size={15}
                     strokeWidth={1.3}
@@ -615,7 +588,6 @@ export default function ProductPage() {
                   />
 
                   <div>
-
                     <p className="text-[10px] font-medium text-[#29205C]">
                       Availability
                     </p>
@@ -625,13 +597,10 @@ export default function ProductPage() {
                         ? "This piece is currently available."
                         : "This piece is currently unavailable."}
                     </p>
-
                   </div>
-
                 </div>
 
                 <div className="flex items-start gap-3">
-
                   <ShieldCheck
                     size={15}
                     strokeWidth={1.3}
@@ -639,7 +608,6 @@ export default function ProductPage() {
                   />
 
                   <div>
-
                     <p className="text-[10px] font-medium text-[#29205C]">
                       Secure shopping
                     </p>
@@ -647,13 +615,10 @@ export default function ProductPage() {
                     <p className="mt-1 text-[8px] leading-4 text-[#8A8293]">
                       Secure payments powered by Square.
                     </p>
-
                   </div>
-
                 </div>
 
                 <div className="flex items-start gap-3">
-
                   <Mail
                     size={15}
                     strokeWidth={1.3}
@@ -661,7 +626,6 @@ export default function ProductPage() {
                   />
 
                   <div>
-
                     <p className="text-[10px] font-medium text-[#29205C]">
                       Need help?
                     </p>
@@ -672,17 +636,11 @@ export default function ProductPage() {
                     >
                       Contact Lazuli →
                     </Link>
-
                   </div>
-
                 </div>
-
               </div>
-
             </div>
-
           </aside>
-
         </div>
 
         {/* =====================================
@@ -690,11 +648,8 @@ export default function ProductPage() {
         ====================================== */}
 
         <section className="mt-8 rounded-[1rem] border border-[#E4DDE9] bg-white">
-
           <div className="grid lg:grid-cols-[180px_1fr]">
-
             <div className="border-b border-[#E9E3ED] p-6 lg:border-b-0 lg:border-r">
-
               <p className="text-[8px] font-medium uppercase tracking-[0.28em] text-[#6539B8]">
                 Details
               </p>
@@ -702,20 +657,15 @@ export default function ProductPage() {
               <h2 className="mt-2 font-serif text-xl text-[#29205C]">
                 About this piece
               </h2>
-
             </div>
 
             <div className="p-6 lg:p-8">
-
               <p className="max-w-3xl text-sm leading-7 text-[#70687A]">
                 {product.description ??
                   "Explore this carefully selected piece from the Lazuli collection."}
               </p>
-
             </div>
-
           </div>
-
         </section>
 
         {/* =====================================
@@ -723,7 +673,6 @@ export default function ProductPage() {
         ====================================== */}
 
         <div className="mt-8">
-
           <Link
             href="/catalogue"
             className="group inline-flex items-center gap-3 text-[8px] font-medium uppercase tracking-[0.25em] text-[#29205C] transition-colors hover:text-[#6539B8]"
@@ -733,12 +682,9 @@ export default function ProductPage() {
               strokeWidth={1.3}
               className="transition-transform duration-300 group-hover:-translate-x-1"
             />
-
             Continue browsing
           </Link>
-
         </div>
-
       </section>
 
       {/* =========================================
@@ -746,7 +692,6 @@ export default function ProductPage() {
       ========================================== */}
 
       <Footer />
-
     </main>
   );
 }

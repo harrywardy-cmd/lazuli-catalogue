@@ -42,33 +42,129 @@ export async function getSquareCatalog(): Promise<Product[]> {
   const objects =
     await getAllSquareCatalogObjects();
 
-  // Map the complete Square catalogue.
-  const products = mapSquareCatalog(objects);
+  /*
+   * Convert Square catalogue objects into
+   * Lazuli products and their variations.
+   */
+  const products =
+    mapSquareCatalog(objects);
 
-  // Get the variation IDs we need inventory for.
-  const variationIds = products.map(
-    (product) => product.variationId,
+  /*
+   * Collect EVERY variation ID.
+   *
+   * Previously we only collected:
+   *
+   * product.variationId
+   *
+   * which meant only one variation received
+   * inventory information.
+   */
+  const variationIds = products.flatMap(
+    (product) =>
+      product.variations.map(
+        (variation) => variation.id,
+      ),
   );
 
-  // Retrieve current inventory from Square.
+  /*
+   * Retrieve current inventory from Square
+   * for every variation.
+   */
   const inventory =
-    await getSquareInventory(variationIds);
+    await getSquareInventory(
+      variationIds,
+    );
 
-  // Add inventory and Lazuli-specific flags.
-  return products.map((product) => ({
-    ...product,
+  /*
+   * Add inventory to each variation.
+   */
+  return products.map((product) => {
+    const variations =
+      product.variations.map(
+        (variation) => ({
+          ...variation,
 
-    stock:
-      inventory.get(product.variationId) ?? 0,
+          stock:
+            inventory.get(
+              variation.id,
+            ) ?? 0,
+        }),
+      );
 
-    featured: featuredProducts.includes(
-      product.id,
-    ),
+    /*
+     * Calculate the total stock for the
+     * entire product.
+     *
+     * Example:
+     *
+     * Gojo   = 5
+     * Geto   = 7
+     * Satoru = 3
+     *
+     * Product stock = 15
+     */
+    const totalStock =
+      variations.reduce(
+        (total, variation) =>
+          total + variation.stock,
+        0,
+      );
 
-    trending: trendingProducts.includes(
-      product.id,
-    ),
-  }));
+    /*
+     * Keep the first variation as the
+     * temporary/default variation.
+     *
+     * This allows the existing catalogue
+     * components to continue working while
+     * we update the UI.
+     */
+    const defaultVariation =
+      variations[0];
+
+    return {
+      ...product,
+
+      /*
+       * All variations with current stock.
+       */
+      variations,
+
+      /*
+       * Keep existing product-level fields
+       * for backwards compatibility.
+       */
+      stock: totalStock,
+
+      price:
+        defaultVariation?.price ??
+        product.price,
+
+      currency:
+        defaultVariation?.currency ??
+        product.currency,
+
+      imageUrl:
+        defaultVariation?.imageUrl ??
+        product.imageUrl,
+
+      variationId:
+        defaultVariation?.id ??
+        product.variationId,
+
+      /*
+       * Lazuli-specific flags.
+       */
+      featured:
+        featuredProducts.includes(
+          product.id,
+        ),
+
+      trending:
+        trendingProducts.includes(
+          product.id,
+        ),
+    };
+  });
 }
 
 /*

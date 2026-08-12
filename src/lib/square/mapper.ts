@@ -1,22 +1,19 @@
 import { Square } from "square";
-import type { Product } from "@/types/product";
+import type {
+  Product,
+  ProductVariation,
+} from "@/types/product";
 
 export function mapSquareCatalog(
   objects: Square.CatalogObject[],
 ): Product[] {
   /*
    * Create a lookup table for Square images.
-   *
-   * Square gives products image IDs, while the actual
-   * image URLs are returned as separate IMAGE objects.
    */
   const images = new Map<string, string>();
 
   /*
    * Create a lookup table for Square categories.
-   *
-   * Products store the category ID, while the CATEGORY
-   * object contains the actual category name.
    */
   const categories = new Map<string, string>();
 
@@ -52,6 +49,9 @@ export function mapSquareCatalog(
 
   const products: Product[] = [];
 
+  /*
+   * Convert each Square ITEM into a Lazuli product.
+   */
   for (const object of objects) {
     /*
      * We only want actual ITEM objects.
@@ -67,46 +67,108 @@ export function mapSquareCatalog(
     const item = object.itemData;
 
     /*
-     * Square can have multiple variations for an item.
-     *
-     * For now, use the first ITEM_VARIATION.
+     * Get every variation belonging to this item.
      */
-    const variation = item.variations?.find(
-      (variation) =>
-        variation.type === "ITEM_VARIATION",
-    );
+    const squareVariations =
+      item.variations?.filter(
+        (variation) =>
+          variation.type ===
+          "ITEM_VARIATION",
+      ) ?? [];
 
-    if (
-      !variation ||
-      variation.type !== "ITEM_VARIATION" ||
-      !variation.id ||
-      !variation.itemVariationData
-    ) {
+    /*
+     * Ignore products without variations.
+     */
+    if (squareVariations.length === 0) {
       continue;
     }
 
     /*
-     * Get the price from the variation.
+     * Convert Square variations into
+     * Lazuli ProductVariation objects.
      */
-    const priceMoney =
-      variation.itemVariationData.priceMoney;
+    const variations = squareVariations
+      .map((variation) => {
+        if (
+          variation.type !== "ITEM_VARIATION" ||
+          !variation.id ||
+          !variation.itemVariationData
+        ) {
+          return null;
+        }
 
-    const amount = Number(
-      priceMoney?.amount ?? 0,
-    );
+        const variationData =
+          variation.itemVariationData;
+
+        const priceMoney =
+          variationData.priceMoney;
+
+        const amount = Number(
+          priceMoney?.amount ?? 0,
+        );
+
+        const variationImageId =
+          variationData.imageIds?.[0];
+
+        const productImageId =
+          item.imageIds?.[0];
+
+        const imageUrl =
+          variationImageId
+            ? images.get(variationImageId)
+            : productImageId
+              ? images.get(productImageId)
+              : undefined;
+
+        return {
+          id: variation.id,
+
+          name:
+            variationData.name ??
+            "Default",
+
+          price: amount / 100,
+
+          currency: String(
+            priceMoney?.currency ?? "AUD",
+          ),
+
+          stock: 0,
+
+          imageUrl,
+        };
+      })
+      .filter(
+        (variation) => variation !== null,
+      );
 
     /*
-     * Get the first product image.
+     * Make sure we still have at least
+     * one valid variation.
      */
-    const imageId = item.imageIds?.[0];
+    if (variations.length === 0) {
+      continue;
+    }
+
+    /*
+     * The first variation is temporarily
+     * used as the default product value.
+     */
+    const defaultVariation =
+      variations[0];
+
+    /*
+     * Product image.
+     */
+    const imageId =
+      item.imageIds?.[0];
 
     const imageUrl = imageId
       ? images.get(imageId)
       : undefined;
 
     /*
-     * Get the first Square category assigned
-     * to this product.
+     * Product category.
      */
     const categoryId =
       item.categories?.[0]?.id;
@@ -116,22 +178,37 @@ export function mapSquareCatalog(
       : undefined;
 
     /*
-     * Add the product to our application's
-     * Product format.
+     * Add product.
      */
     products.push({
       id: object.id,
-      variationId: variation.id,
+
+      variationId:
+        defaultVariation.id,
+
       name:
-        item.name ?? "Unnamed Product",
+        item.name ??
+        "Unnamed Product",
+
       description:
-        item.description ?? undefined,
-      price: amount / 100,
+        item.description ??
+        undefined,
+
+      price:
+        defaultVariation.price,
+
       currency:
-        priceMoney?.currency ?? "AUD",
-      imageUrl,
+        defaultVariation.currency,
+
+      imageUrl:
+        defaultVariation.imageUrl ??
+        imageUrl,
+
       category,
+
       stock: 0,
+
+      variations,
     });
   }
 
