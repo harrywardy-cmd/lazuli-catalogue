@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
+import Footer from "@/components/layout/Footer";
 
 const FAVOURITES_KEY = "lazuli-favourites";
 
@@ -41,16 +42,10 @@ export default function FavouritesPage() {
       loadFavourites();
     }
 
-    window.addEventListener(
-      "favourites-updated",
-      handleFavouritesUpdated,
-    );
+    window.addEventListener("favourites-updated", handleFavouritesUpdated);
 
     return () => {
-      window.removeEventListener(
-        "favourites-updated",
-        handleFavouritesUpdated,
-      );
+      window.removeEventListener("favourites-updated", handleFavouritesUpdated);
     };
   }, []);
 
@@ -62,8 +57,7 @@ export default function FavouritesPage() {
 
   function loadFavourites() {
     try {
-      const saved =
-        localStorage.getItem(FAVOURITES_KEY);
+      const saved = localStorage.getItem(FAVOURITES_KEY);
 
       if (!saved) {
         setFavourites([]);
@@ -87,36 +81,25 @@ export default function FavouritesPage() {
        * optional so older favourites remain
        * compatible.
        */
-      const validFavourites =
-        parsed.filter(
-          (item): item is FavouriteProduct => {
-            if (
-              !item ||
-              typeof item !== "object"
-            ) {
-              return false;
-            }
+      const validFavourites = parsed.filter(
+        (item): item is FavouriteProduct => {
+          if (!item || typeof item !== "object") {
+            return false;
+          }
 
-            const favourite =
-              item as Record<string, unknown>;
+          const favourite = item as Record<string, unknown>;
 
-            return (
-              typeof favourite.id ===
-                "string" &&
-              typeof favourite.name ===
-                "string" &&
-              typeof favourite.price ===
-                "number"
-            );
-          },
-        );
+          return (
+            typeof favourite.id === "string" &&
+            typeof favourite.name === "string" &&
+            typeof favourite.price === "number"
+          );
+        },
+      );
 
       setFavourites(validFavourites);
     } catch (error) {
-      console.error(
-        "Unable to load favourites:",
-        error,
-      );
+      console.error("Unable to load favourites:", error);
 
       setFavourites([]);
     } finally {
@@ -130,49 +113,32 @@ export default function FavouritesPage() {
    * =========================================
    */
 
-  function removeFavourite(
-    favourite: FavouriteProduct,
-  ) {
+  function removeFavourite(favourite: FavouriteProduct) {
     try {
-      const updated =
-        favourites.filter(
-          (item) => {
-            /*
-             * New variation-aware favourite.
-             */
-            if (
-              favourite.variationId &&
-              item.variationId
-            ) {
-              return !(
-                item.id === favourite.id &&
-                item.variationId ===
-                  favourite.variationId
-              );
-            }
+      const updated = favourites.filter((item) => {
+        /*
+         * New variation-aware favourite.
+         */
+        if (favourite.variationId && item.variationId) {
+          return !(
+            item.id === favourite.id &&
+            item.variationId === favourite.variationId
+          );
+        }
 
-            /*
-             * Legacy favourite.
-             */
-            return item.id !== favourite.id;
-          },
-        );
+        /*
+         * Legacy favourite.
+         */
+        return item.id !== favourite.id;
+      });
 
-      localStorage.setItem(
-        FAVOURITES_KEY,
-        JSON.stringify(updated),
-      );
+      localStorage.setItem(FAVOURITES_KEY, JSON.stringify(updated));
 
       setFavourites(updated);
 
-      window.dispatchEvent(
-        new Event("favourites-updated"),
-      );
+      window.dispatchEvent(new Event("favourites-updated"));
     } catch (error) {
-      console.error(
-        "Unable to remove favourite:",
-        error,
-      );
+      console.error("Unable to remove favourite:", error);
     }
   }
 
@@ -196,13 +162,11 @@ export default function FavouritesPage() {
 
   return (
     <main className="min-h-screen bg-white">
-
       {/* =====================================
           PAGE HEADER
       ====================================== */}
 
       <section className="mx-auto max-w-[1400px] px-6 pb-12 pt-10 sm:px-10 sm:pb-14 sm:pt-14 lg:px-14 xl:px-16">
-
         {/* Back */}
 
         <Link
@@ -230,28 +194,22 @@ export default function FavouritesPage() {
               group-hover:-translate-x-1
             "
           />
-
           Back to catalogue
         </Link>
 
         {/* Heading */}
 
         <div className="mt-9">
-
           <div className="flex items-center gap-3">
-
             <span className="h-px w-7 bg-[#6539B8]" />
 
             <p className="text-[8px] font-medium uppercase tracking-[0.38em] text-[#6539B8]">
               Your collection
             </p>
-
           </div>
 
           <div className="mt-4 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-
             <div>
-
               <h1
                 className="
                   font-serif
@@ -276,10 +234,8 @@ export default function FavouritesPage() {
                   text-[#81778D]
                 "
               >
-                The pieces you&apos;ve saved from
-                the Lazuli collection.
+                The pieces you&apos;ve saved from the Lazuli collection.
               </p>
-
             </div>
 
             {/* Count */}
@@ -299,12 +255,7 @@ export default function FavouritesPage() {
                 sm:self-auto
               "
             >
-
-              <Heart
-                size={13}
-                strokeWidth={1.4}
-                className="text-[#6539B8]"
-              />
+              <Heart size={13} strokeWidth={1.4} className="text-[#6539B8]" />
 
               <span
                 className="
@@ -316,17 +267,11 @@ export default function FavouritesPage() {
                 "
               >
                 {favourites.length}{" "}
-                {favourites.length === 1
-                  ? "piece"
-                  : "pieces"}
+                {favourites.length === 1 ? "piece" : "pieces"}
               </span>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
 
       {/* =====================================
@@ -344,9 +289,7 @@ export default function FavouritesPage() {
           xl:px-16
         "
       >
-
         {favourites.length > 0 ? (
-
           <div
             className="
               grid
@@ -357,39 +300,31 @@ export default function FavouritesPage() {
               xl:grid-cols-4
             "
           >
-
-            {favourites.map(
-              (favourite) => (
-                <FavouriteCard
-                  key={
-                    favourite.variationId
-                      ? `${favourite.id}-${favourite.variationId}`
-                      : favourite.id
-                  }
-                  favourite={favourite}
-                  onRemove={() =>
-                    removeFavourite(
-                      favourite,
-                    )
-                  }
-                />
-              ),
-            )}
-
+            {favourites.map((favourite) => (
+              <FavouriteCard
+                key={
+                  favourite.variationId
+                    ? `${favourite.id}-${favourite.variationId}`
+                    : favourite.id
+                }
+                favourite={favourite}
+                onRemove={() => removeFavourite(favourite)}
+              />
+            ))}
           </div>
-
         ) : (
-
           <EmptyFavourites />
-
         )}
-
       </section>
 
+      {/* =====================================
+          FOOTER
+      ====================================== */}
+
+      <Footer />
     </main>
   );
 }
-
 
 /*
  * =========================================
@@ -402,10 +337,7 @@ type FavouriteCardProps = {
   onRemove: () => void;
 };
 
-function FavouriteCard({
-  favourite,
-  onRemove,
-}: FavouriteCardProps) {
+function FavouriteCard({ favourite, onRemove }: FavouriteCardProps) {
   return (
     <article
       className="
@@ -422,18 +354,11 @@ function FavouriteCard({
         hover:shadow-[0_12px_30px_rgba(41,32,92,0.06)]
       "
     >
-
       {/* Image */}
 
-      <Link
-        href={`/catalogue/${favourite.id}`}
-        className="block"
-      >
-
+      <Link href={`/catalogue/${favourite.id}`} className="block">
         <div className="relative aspect-[1/0.94] overflow-hidden bg-[#F5F3F7]">
-
           {favourite.imageUrl ? (
-
             <img
               src={favourite.imageUrl}
               alt={favourite.name}
@@ -446,11 +371,8 @@ function FavouriteCard({
                 group-hover:scale-[1.025]
               "
             />
-
           ) : (
-
             <div className="flex h-full items-center justify-center">
-
               <span
                 className="
                   text-[8px]
@@ -461,19 +383,14 @@ function FavouriteCard({
               >
                 No image
               </span>
-
             </div>
-
           )}
-
         </div>
-
       </Link>
 
       {/* Information */}
 
       <div className="p-4">
-
         <Link
           href={`/catalogue/${favourite.id}`}
           className="
@@ -509,7 +426,6 @@ function FavouriteCard({
         {/* Price */}
 
         <div className="mt-3 flex items-center justify-between">
-
           <p
             className="
               text-[11px]
@@ -518,7 +434,6 @@ function FavouriteCard({
             "
           >
             ${favourite.price.toFixed(2)}
-
             {favourite.currency && (
               <span
                 className="
@@ -540,9 +455,7 @@ function FavouriteCard({
             type="button"
             onClick={onRemove}
             aria-label={`Remove ${favourite.name}${
-              favourite.variationName
-                ? ` ${favourite.variationName}`
-                : ""
+              favourite.variationName ? ` ${favourite.variationName}` : ""
             } from favourites`}
             className="
               flex
@@ -559,13 +472,8 @@ function FavouriteCard({
               hover:text-white
             "
           >
-            <Heart
-              size={14}
-              strokeWidth={1.4}
-              fill="currentColor"
-            />
+            <Heart size={14} strokeWidth={1.4} fill="currentColor" />
           </button>
-
         </div>
 
         {/* View */}
@@ -594,13 +502,10 @@ function FavouriteCard({
         >
           View piece
         </Link>
-
       </div>
-
     </article>
   );
 }
-
 
 /*
  * =========================================
@@ -625,7 +530,6 @@ function EmptyFavourites() {
         text-center
       "
     >
-
       <div
         className="
           flex
@@ -637,11 +541,7 @@ function EmptyFavourites() {
           bg-[#F0E9F7]
         "
       >
-        <Heart
-          size={23}
-          strokeWidth={1.2}
-          className="text-[#6539B8]"
-        />
+        <Heart size={23} strokeWidth={1.2} className="text-[#6539B8]" />
       </div>
 
       <h2
@@ -665,8 +565,7 @@ function EmptyFavourites() {
           text-[#817A8F]
         "
       >
-        When you find something you love,
-        tap the heart to save it here.
+        When you find something you love, tap the heart to save it here.
       </p>
 
       <Link
@@ -693,7 +592,6 @@ function EmptyFavourites() {
         "
       >
         Explore catalogue
-
         <span
           className="
             text-sm
@@ -704,9 +602,7 @@ function EmptyFavourites() {
         >
           →
         </span>
-
       </Link>
-
     </div>
   );
 }
