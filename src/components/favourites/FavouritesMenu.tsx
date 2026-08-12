@@ -12,8 +12,11 @@ import { useEffect, useState } from "react";
 
 export type FavouriteProduct = {
   id: string;
+  variationId?: string;
   name: string;
+  variationName?: string;
   price: number;
+  currency?: string;
   imageUrl?: string;
 };
 
@@ -28,9 +31,8 @@ export default function FavouritesMenu({
 }: FavouritesMenuProps) {
   const [open, setOpen] = useState(false);
 
-  const [favourites, setFavourites] = useState<
-    FavouriteProduct[]
-  >([]);
+  const [favourites, setFavourites] =
+    useState<FavouriteProduct[]>([]);
 
   /*
    * =========================================
@@ -39,35 +41,47 @@ export default function FavouritesMenu({
    *
    * Read favourites from localStorage.
    *
-   * The data is validated before being stored
-   * in React state so malformed data cannot
-   * break the menu.
+   * Favourites are variation-aware, meaning
+   * two variations of the same Square product
+   * can exist independently.
    */
   function loadFavourites() {
     try {
       const saved =
-        localStorage.getItem(FAVOURITES_KEY);
+        localStorage.getItem(
+          FAVOURITES_KEY,
+        );
 
       if (!saved) {
         setFavourites([]);
         return;
       }
 
-      const parsed: unknown = JSON.parse(saved);
+      const parsed: unknown =
+        JSON.parse(saved);
 
       if (!Array.isArray(parsed)) {
-        localStorage.removeItem(FAVOURITES_KEY);
+        localStorage.removeItem(
+          FAVOURITES_KEY,
+        );
+
         setFavourites([]);
         return;
       }
 
       /*
-       * Only allow properly formatted favourite
-       * products.
+       * Only allow properly formatted
+       * favourite products.
+       *
+       * variationId and variationName are
+       * optional so older favourites do not
+       * immediately break the application.
        */
-      const validFavourites: FavouriteProduct[] =
-        parsed
-          .filter((product): product is FavouriteProduct => {
+      const validFavourites =
+        parsed.filter(
+          (
+            product,
+          ): product is FavouriteProduct => {
             if (
               !product ||
               typeof product !== "object"
@@ -76,36 +90,70 @@ export default function FavouritesMenu({
             }
 
             const item =
-              product as Record<string, unknown>;
+              product as Record<
+                string,
+                unknown
+              >;
 
             return (
-              typeof item.id === "string" &&
+              typeof item.id ===
+                "string" &&
               item.id.length > 0 &&
-              typeof item.name === "string" &&
+              typeof item.name ===
+                "string" &&
               item.name.length > 0 &&
-              typeof item.price === "number" &&
-              Number.isFinite(item.price)
+              typeof item.price ===
+                "number" &&
+              Number.isFinite(
+                item.price,
+              )
             );
-          })
-          /*
-           * Remove duplicate products.
-           */
-          .filter(
-            (product, index, array) =>
-              array.findIndex(
-                (item) =>
-                  item.id === product.id,
-              ) === index,
-          );
-
-      setFavourites(validFavourites);
+          },
+        );
 
       /*
-       * Clean localStorage as well.
+       * Remove duplicates.
+       *
+       * A variation-aware favourite is
+       * identified by:
+       *
+       * product ID + variation ID
+       *
+       * Legacy favourites without a
+       * variation ID use the product ID.
+       */
+      const uniqueFavourites =
+        validFavourites.filter(
+          (
+            product,
+            index,
+            array,
+          ) => {
+            return (
+              array.findIndex(
+                (item) =>
+                  item.id ===
+                    product.id &&
+                  item.variationId ===
+                    product.variationId,
+              ) === index
+            );
+          },
+        );
+
+      setFavourites(
+        uniqueFavourites,
+      );
+
+      /*
+       * Clean localStorage so duplicate
+       * entries are removed permanently.
        */
       localStorage.setItem(
         FAVOURITES_KEY,
-        JSON.stringify(validFavourites),
+        JSON.stringify(
+          uniqueFavourites,
+        ),
       );
     } catch (error) {
       console.error(
@@ -113,7 +161,6 @@ export default function FavouritesMenu({
         error,
       );
 
-      localStorage.removeItem(FAVOURITES_KEY);
       setFavourites([]);
     }
   }
@@ -123,6 +170,7 @@ export default function FavouritesMenu({
    * INITIAL LOAD
    * =========================================
    */
+
   useEffect(() => {
     loadFavourites();
   }, []);
@@ -135,8 +183,8 @@ export default function FavouritesMenu({
    * ProductCard dispatches this event whenever
    * a favourite is added or removed.
    *
-   * This means the header updates immediately
-   * without needing a page refresh.
+   * This keeps the header synchronized without
+   * requiring a page refresh.
    */
   useEffect(() => {
     function handleFavouritesUpdated() {
@@ -160,26 +208,58 @@ export default function FavouritesMenu({
    * =========================================
    * REMOVE FAVOURITE
    * =========================================
+   *
+   * Remove a specific variation rather than
+   * removing the entire parent product.
    */
-  function removeFavourite(id: string) {
+  function removeFavourite(
+    product: FavouriteProduct,
+  ) {
     const updatedFavourites =
       favourites.filter(
-        (product) => product.id !== id,
+        (favourite) => {
+          /*
+           * Variation-aware favourite.
+           */
+          if (
+            product.variationId &&
+            favourite.variationId
+          ) {
+            return !(
+              favourite.id ===
+                product.id &&
+              favourite.variationId ===
+                product.variationId
+            );
+          }
+
+          /*
+           * Legacy favourite.
+           */
+          return favourite.id !==
+            product.id;
+        },
       );
 
-    setFavourites(updatedFavourites);
+    setFavourites(
+      updatedFavourites,
+    );
 
     localStorage.setItem(
       FAVOURITES_KEY,
-      JSON.stringify(updatedFavourites),
+      JSON.stringify(
+        updatedFavourites,
+      ),
     );
 
     /*
-     * Notify ProductCards and other favourite
-     * components that the list changed.
+     * Tell ProductCards and other
+     * favourite components to update.
      */
     window.dispatchEvent(
-      new Event("favourites-updated"),
+      new Event(
+        "favourites-updated",
+      ),
     );
   }
 
@@ -188,6 +268,7 @@ export default function FavouritesMenu({
    * CLOSE MENU
    * =========================================
    */
+
   function closeMenu() {
     setOpen(false);
   }
@@ -197,6 +278,7 @@ export default function FavouritesMenu({
    * MOBILE
    * =========================================
    */
+
   if (mobile) {
     return (
       <>
@@ -204,7 +286,9 @@ export default function FavouritesMenu({
           type="button"
           aria-label="Open favourites"
           aria-expanded={open}
-          onClick={() => setOpen(!open)}
+          onClick={() =>
+            setOpen(!open)
+          }
           className="
             relative
             flex h-9 w-9
@@ -269,10 +353,15 @@ export default function FavouritesMenu({
 
               {favourites.length > 0 ? (
                 <div className="space-y-3">
+
                   {favourites.map(
                     (product) => (
                       <FavouriteItem
-                        key={product.id}
+                        key={
+                          product.variationId
+                            ? `${product.id}-${product.variationId}`
+                            : product.id
+                        }
                         product={product}
                         onRemove={
                           removeFavourite
@@ -283,6 +372,7 @@ export default function FavouritesMenu({
                       />
                     ),
                   )}
+
                 </div>
               ) : (
                 <EmptyState />
@@ -290,7 +380,9 @@ export default function FavouritesMenu({
 
               {favourites.length > 0 && (
                 <ViewAllButton
-                  onClick={closeMenu}
+                  onClick={
+                    closeMenu
+                  }
                 />
               )}
 
@@ -306,6 +398,7 @@ export default function FavouritesMenu({
    * DESKTOP
    * =========================================
    */
+
   return (
     <div className="relative">
 
@@ -315,7 +408,9 @@ export default function FavouritesMenu({
         type="button"
         aria-label="Open favourites"
         aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        onClick={() =>
+          setOpen(!open)
+        }
         className={`
           relative
           flex h-9 w-9
@@ -391,7 +486,11 @@ export default function FavouritesMenu({
               {favourites.map(
                 (product) => (
                   <FavouriteItem
-                    key={product.id}
+                    key={
+                      product.variationId
+                        ? `${product.id}-${product.variationId}`
+                        : product.id
+                    }
                     product={product}
                     onRemove={
                       removeFavourite
@@ -423,6 +522,7 @@ export default function FavouritesMenu({
   );
 }
 
+
 /*
  * =========================================
  * FAVOURITE HEADER
@@ -448,6 +548,7 @@ function FavouriteHeader({
         py-4
       "
     >
+
       <div>
 
         <p className="font-serif text-lg font-medium text-[#29205C]">
@@ -456,7 +557,9 @@ function FavouriteHeader({
 
         <p className="mt-0.5 text-[8px] uppercase tracking-[0.2em] text-[#9A91A4]">
           {count}{" "}
-          {count === 1 ? "saved" : "saved"}
+          {count === 1
+            ? "saved"
+            : "saved"}
         </p>
 
       </div>
@@ -485,6 +588,7 @@ function FavouriteHeader({
   );
 }
 
+
 /*
  * =========================================
  * FAVOURITE ITEM
@@ -497,15 +601,21 @@ function FavouriteItem({
   onNavigate,
 }: {
   product: FavouriteProduct;
-  onRemove: (id: string) => void;
+  onRemove: (
+    product: FavouriteProduct,
+  ) => void;
   onNavigate: () => void;
 }) {
   /*
-   * Extra protection against malformed data.
+   * Extra protection against malformed
+   * price data.
    */
   const price =
-    typeof product.price === "number" &&
-    Number.isFinite(product.price)
+    typeof product.price ===
+      "number" &&
+    Number.isFinite(
+      product.price,
+    )
       ? product.price
       : 0;
 
@@ -539,10 +649,15 @@ function FavouriteItem({
           bg-[#F5F2F7]
         "
       >
+
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
-            alt={product.name}
+            alt={
+              product.variationName
+                ? `${product.name} - ${product.variationName}`
+                : product.name
+            }
             fill
             sizes="64px"
             className="
@@ -565,6 +680,7 @@ function FavouriteItem({
             No image
           </div>
         )}
+
       </Link>
 
       {/* =================================
@@ -589,8 +705,33 @@ function FavouriteItem({
           {product.name}
         </Link>
 
+        {/* Variation */}
+
+        {product.variationName && (
+          <p
+            className="
+              mt-0.5
+              truncate
+              text-[9px]
+              uppercase
+              tracking-[0.12em]
+              text-[#81778D]
+            "
+          >
+            {product.variationName}
+          </p>
+        )}
+
+        {/* Price */}
+
         <p className="mt-1 text-[10px] font-medium text-[#6539B8]">
           ${price.toFixed(2)}
+
+          {product.currency && (
+            <span className="ml-1 text-[8px] text-[#9A91A4]">
+              {product.currency}
+            </span>
+          )}
         </p>
 
         {/* Actions */}
@@ -624,7 +765,7 @@ function FavouriteItem({
           <button
             type="button"
             onClick={() =>
-              onRemove(product.id)
+              onRemove(product)
             }
             className="
               flex
@@ -655,6 +796,7 @@ function FavouriteItem({
   );
 }
 
+
 /*
  * =========================================
  * EMPTY STATE
@@ -676,13 +818,14 @@ function EmptyState() {
       </p>
 
       <p className="mt-1 text-[9px] leading-4 text-[#9A91A4]">
-        Save pieces you love and
-        they&apos;ll appear here.
+        Save pieces you love and they&apos;ll
+        appear here.
       </p>
 
     </div>
   );
 }
+
 
 /*
  * =========================================

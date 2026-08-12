@@ -16,6 +16,15 @@ import {
 import { useParams } from "next/navigation";
 import Footer from "@/components/layout/Footer";
 
+type ProductVariation = {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  stock: number;
+  imageUrl?: string;
+};
+
 type Product = {
   id: string;
   variationId: string;
@@ -26,12 +35,16 @@ type Product = {
   imageUrl?: string;
   category?: string;
   stock: number;
+  variations: ProductVariation[];
 };
 
 type FavouriteProduct = {
   id: string;
+  variationId: string;
   name: string;
+  variationName: string;
   price: number;
+  currency: string;
   imageUrl?: string;
 };
 
@@ -47,8 +60,12 @@ export default function ProductPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [isFavourite, setIsFavourite] = useState(false);
+
+  const [selectedVariationId, setSelectedVariationId] = useState<string | null>(
+    null,
+  );
   useEffect(() => {
-    if (!product) {
+    if (!product || !selectedVariationId) {
       return;
     }
 
@@ -56,21 +73,40 @@ export default function ProductPage() {
       const saved = localStorage.getItem(FAVOURITES_KEY);
 
       if (!saved) {
+        setIsFavourite(false);
         return;
       }
 
       const favourites = JSON.parse(saved) as FavouriteProduct[];
 
       setIsFavourite(
-        favourites.some((favourite) => favourite?.id === product.id),
+        favourites.some(
+          (favourite) =>
+            favourite?.id === product.id &&
+            favourite?.variationId === selectedVariationId,
+        ),
       );
     } catch (error) {
       console.error("Unable to load favourite:", error);
+
+      setIsFavourite(false);
     }
+  }, [product, selectedVariationId]);
+
+  useEffect(() => {
+    if (!product || product.variations.length === 0) {
+      return;
+    }
+
+    const availableVariation = product.variations.find(
+      (variation) => variation.stock > 0,
+    );
+
+    setSelectedVariationId(availableVariation?.id ?? product.variations[0].id);
   }, [product]);
 
   function toggleFavourite() {
-    if (!product) {
+    if (!product || !selectedVariation) {
       return;
     }
 
@@ -79,45 +115,58 @@ export default function ProductPage() {
 
       const favourites: FavouriteProduct[] = saved ? JSON.parse(saved) : [];
 
+      /*
+       * A favourite is unique to a specific
+       * product variation.
+       */
       const alreadyFavourite = favourites.some(
-        (favourite) => favourite?.id === product.id,
+        (favourite) =>
+          favourite?.id === product.id &&
+          favourite?.variationId === selectedVariation.id,
       );
 
       let updatedFavourites: FavouriteProduct[];
 
       if (alreadyFavourite) {
         /*
-         * Remove the product from favourites.
+         * Remove this specific variation.
          */
         updatedFavourites = favourites.filter(
-          (favourite) => favourite?.id !== product.id,
+          (favourite) =>
+            !(
+              favourite?.id === product.id &&
+              favourite?.variationId === selectedVariation.id
+            ),
         );
       } else {
         /*
-         * Add the product to favourites.
+         * Save the currently selected variation.
          */
         const favouriteProduct: FavouriteProduct = {
           id: product.id,
+          variationId: selectedVariation.id,
           name: product.name,
-          price: product.price,
-          imageUrl: product.imageUrl,
+          variationName: selectedVariation.name,
+          price: selectedVariation.price,
+          currency: selectedVariation.currency,
+          imageUrl: selectedVariation.imageUrl ?? product.imageUrl,
         };
 
         updatedFavourites = [...favourites, favouriteProduct];
       }
 
       /*
-       * Save favourites to localStorage.
+       * Save the updated favourites.
        */
       localStorage.setItem(FAVOURITES_KEY, JSON.stringify(updatedFavourites));
 
       /*
-       * Update the current page immediately.
+       * Update the heart immediately.
        */
       setIsFavourite(!alreadyFavourite);
 
       /*
-       * Tell the header and other favourite
+       * Tell the header and favourites
        * components that the list changed.
        */
       window.dispatchEvent(new Event("favourites-updated"));
@@ -125,7 +174,6 @@ export default function ProductPage() {
       console.error("Unable to update favourites:", error);
     }
   }
-
   /*
    * =========================================
    * LOAD PRODUCT
@@ -215,7 +263,12 @@ export default function ProductPage() {
     );
   }
 
-  const isAvailable = product.stock > 0;
+  const selectedVariation =
+    product.variations.find(
+      (variation) => variation.id === selectedVariationId,
+    ) ?? product.variations[0];
+
+  const isAvailable = selectedVariation.stock > 0;
 
   return (
     <main className="min-h-screen bg-[#FAF9FB]">
@@ -271,10 +324,10 @@ export default function ProductPage() {
 
           <div className="relative">
             <div className="relative aspect-square overflow-hidden rounded-[1.25rem] border border-[#E4DDE9] bg-[#F4F1F6]">
-              {product.imageUrl ? (
+              {selectedVariation?.imageUrl ? (
                 <Image
-                  src={product.imageUrl}
-                  alt={product.name}
+                  src={selectedVariation.imageUrl}
+                  alt={`${product.name} - ${selectedVariation.name}`}
                   fill
                   priority
                   sizes="(max-width: 1280px) 60vw, 55vw"
@@ -363,13 +416,13 @@ export default function ProductPage() {
 
             <div className="mt-6 flex items-center gap-4">
               <p className="text-xl font-medium text-[#6539B8]">
-                ${product.price.toFixed(2)}
+                ${selectedVariation.price.toFixed(2)}
               </p>
 
               <span className="h-4 w-px bg-[#DDD5E2]" />
 
               <p className="text-[9px] uppercase tracking-[0.18em] text-[#9A91A4]">
-                {product.currency}
+                {selectedVariation.currency}
               </p>
             </div>
 
@@ -385,7 +438,7 @@ export default function ProductPage() {
                   </span>
 
                   <span className="text-[8px] text-[#769180]">
-                    · {product.stock} available
+                    · {selectedVariation.stock} available
                   </span>
                 </div>
               ) : (
@@ -398,6 +451,90 @@ export default function ProductPage() {
                 </div>
               )}
             </div>
+            {/* variations */}
+            {product.variations.length > 1 && (
+              <div className="mt-8 border-t border-[#E5DFE9] pt-7">
+                <div className="flex items-center justify-between">
+                  <p className="text-[8px] font-medium uppercase tracking-[0.28em] text-[#6539B8]">
+                    Select variation
+                  </p>
+
+                  {selectedVariation && (
+                    <p className="text-[8px] text-[#9A91A4]">
+                      {selectedVariation.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {product.variations.map((variation) => {
+                    const isSelected = variation.id === selectedVariationId;
+
+                    const isInStock = variation.stock > 0;
+
+                    return (
+                      <button
+                        key={variation.id}
+                        type="button"
+                        disabled={!isInStock}
+                        onClick={() => setSelectedVariationId(variation.id)}
+                        className={`
+                relative overflow-hidden
+                rounded-xl border
+                text-left
+                transition-all
+                duration-200
+                ${
+                  isSelected
+                    ? "border-[#6539B8] bg-[#F5F0FA]"
+                    : "border-[#E4DDE9] bg-white hover:border-[#BFA9D5]"
+                }
+                ${!isInStock ? "cursor-not-allowed opacity-45" : ""}
+              `}
+                      >
+                        {variation.imageUrl ? (
+                          <div className="relative aspect-square overflow-hidden bg-[#F4F1F6]">
+                            <Image
+                              src={variation.imageUrl}
+                              alt={variation.name}
+                              fill
+                              sizes="150px"
+                              className="object-cover"
+                            />
+
+                            {!isInStock && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-white/60">
+                                <span className="rounded-full bg-white/90 px-2 py-1 text-[7px] font-medium uppercase tracking-[0.12em] text-[#81778D]">
+                                  Sold out
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+
+                        <div className="p-3">
+                          <p className="truncate text-[9px] font-medium text-[#29205C]">
+                            {variation.name}
+                          </p>
+
+                          <p className="mt-1 text-[8px] text-[#81778D]">
+                            {isInStock
+                              ? `${variation.stock} available`
+                              : "Sold out"}
+                          </p>
+                        </div>
+
+                        {isSelected && (
+                          <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#6539B8] text-white">
+                            <Check size={11} strokeWidth={2} />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Description */}
 
@@ -438,7 +575,9 @@ export default function ProductPage() {
                       : "text-xs text-[#81778D]"
                   }
                 >
-                  {isAvailable ? `${product.stock} available` : "Unavailable"}
+                  {isAvailable
+                    ? `${selectedVariation.stock} available`
+                    : "Unavailable"}
                 </span>
               </div>
 
