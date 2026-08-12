@@ -2,12 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Heart,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ArrowRight, Heart, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export type FavouriteProduct = {
@@ -25,14 +20,33 @@ type FavouritesMenuProps = {
 };
 
 const FAVOURITES_KEY = "lazuli-favourites";
+/*
+ * =========================================
+ * BUILD FAVOURITE URL
+ * =========================================
+ *
+ * Include the variation ID when the favourite
+ * represents a specific Square variation.
+ *
+ * This allows the product page to automatically
+ * select the variation the user saved.
+ */
+function getFavouriteUrl(product: FavouriteProduct) {
+  if (!product.variationId) {
+    return `/catalogue/${product.id}`;
+  }
+
+  return `/catalogue/${product.id}?variation=${encodeURIComponent(
+    product.variationId,
+  )}`;
+}
 
 export default function FavouritesMenu({
   mobile = false,
 }: FavouritesMenuProps) {
   const [open, setOpen] = useState(false);
 
-  const [favourites, setFavourites] =
-    useState<FavouriteProduct[]>([]);
+  const [favourites, setFavourites] = useState<FavouriteProduct[]>([]);
 
   /*
    * =========================================
@@ -47,23 +61,17 @@ export default function FavouritesMenu({
    */
   function loadFavourites() {
     try {
-      const saved =
-        localStorage.getItem(
-          FAVOURITES_KEY,
-        );
+      const saved = localStorage.getItem(FAVOURITES_KEY);
 
       if (!saved) {
         setFavourites([]);
         return;
       }
 
-      const parsed: unknown =
-        JSON.parse(saved);
+      const parsed: unknown = JSON.parse(saved);
 
       if (!Array.isArray(parsed)) {
-        localStorage.removeItem(
-          FAVOURITES_KEY,
-        );
+        localStorage.removeItem(FAVOURITES_KEY);
 
         setFavourites([]);
         return;
@@ -77,39 +85,24 @@ export default function FavouritesMenu({
        * optional so older favourites do not
        * immediately break the application.
        */
-      const validFavourites =
-        parsed.filter(
-          (
-            product,
-          ): product is FavouriteProduct => {
-            if (
-              !product ||
-              typeof product !== "object"
-            ) {
-              return false;
-            }
+      const validFavourites = parsed.filter(
+        (product): product is FavouriteProduct => {
+          if (!product || typeof product !== "object") {
+            return false;
+          }
 
-            const item =
-              product as Record<
-                string,
-                unknown
-              >;
+          const item = product as Record<string, unknown>;
 
-            return (
-              typeof item.id ===
-                "string" &&
-              item.id.length > 0 &&
-              typeof item.name ===
-                "string" &&
-              item.name.length > 0 &&
-              typeof item.price ===
-                "number" &&
-              Number.isFinite(
-                item.price,
-              )
-            );
-          },
-        );
+          return (
+            typeof item.id === "string" &&
+            item.id.length > 0 &&
+            typeof item.name === "string" &&
+            item.name.length > 0 &&
+            typeof item.price === "number" &&
+            Number.isFinite(item.price)
+          );
+        },
+      );
 
       /*
        * Remove duplicates.
@@ -122,44 +115,27 @@ export default function FavouritesMenu({
        * Legacy favourites without a
        * variation ID use the product ID.
        */
-      const uniqueFavourites =
-        validFavourites.filter(
-          (
-            product,
-            index,
-            array,
-          ) => {
-            return (
-              array.findIndex(
-                (item) =>
-                  item.id ===
-                    product.id &&
-                  item.variationId ===
-                    product.variationId,
-              ) === index
-            );
-          },
-        );
-
-      setFavourites(
-        uniqueFavourites,
+      const uniqueFavourites = validFavourites.filter(
+        (product, index, array) => {
+          return (
+            array.findIndex(
+              (item) =>
+                item.id === product.id &&
+                item.variationId === product.variationId,
+            ) === index
+          );
+        },
       );
+
+      setFavourites(uniqueFavourites);
 
       /*
        * Clean localStorage so duplicate
        * entries are removed permanently.
        */
-      localStorage.setItem(
-        FAVOURITES_KEY,
-        JSON.stringify(
-          uniqueFavourites,
-        ),
-      );
+      localStorage.setItem(FAVOURITES_KEY, JSON.stringify(uniqueFavourites));
     } catch (error) {
-      console.error(
-        "Unable to load favourites:",
-        error,
-      );
+      console.error("Unable to load favourites:", error);
 
       setFavourites([]);
     }
@@ -191,16 +167,10 @@ export default function FavouritesMenu({
       loadFavourites();
     }
 
-    window.addEventListener(
-      "favourites-updated",
-      handleFavouritesUpdated,
-    );
+    window.addEventListener("favourites-updated", handleFavouritesUpdated);
 
     return () => {
-      window.removeEventListener(
-        "favourites-updated",
-        handleFavouritesUpdated,
-      );
+      window.removeEventListener("favourites-updated", handleFavouritesUpdated);
     };
   }, []);
 
@@ -212,55 +182,33 @@ export default function FavouritesMenu({
    * Remove a specific variation rather than
    * removing the entire parent product.
    */
-  function removeFavourite(
-    product: FavouriteProduct,
-  ) {
-    const updatedFavourites =
-      favourites.filter(
-        (favourite) => {
-          /*
-           * Variation-aware favourite.
-           */
-          if (
-            product.variationId &&
-            favourite.variationId
-          ) {
-            return !(
-              favourite.id ===
-                product.id &&
-              favourite.variationId ===
-                product.variationId
-            );
-          }
+  function removeFavourite(product: FavouriteProduct) {
+    const updatedFavourites = favourites.filter((favourite) => {
+      /*
+       * Variation-aware favourite.
+       */
+      if (product.variationId && favourite.variationId) {
+        return !(
+          favourite.id === product.id &&
+          favourite.variationId === product.variationId
+        );
+      }
 
-          /*
-           * Legacy favourite.
-           */
-          return favourite.id !==
-            product.id;
-        },
-      );
+      /*
+       * Legacy favourite.
+       */
+      return favourite.id !== product.id;
+    });
 
-    setFavourites(
-      updatedFavourites,
-    );
+    setFavourites(updatedFavourites);
 
-    localStorage.setItem(
-      FAVOURITES_KEY,
-      JSON.stringify(
-        updatedFavourites,
-      ),
-    );
+    localStorage.setItem(FAVOURITES_KEY, JSON.stringify(updatedFavourites));
 
     /*
      * Tell ProductCards and other
      * favourite components to update.
      */
-    window.dispatchEvent(
-      new Event(
-        "favourites-updated",
-      ),
-    );
+    window.dispatchEvent(new Event("favourites-updated"));
   }
 
   /*
@@ -286,9 +234,7 @@ export default function FavouritesMenu({
           type="button"
           aria-label="Open favourites"
           aria-expanded={open}
-          onClick={() =>
-            setOpen(!open)
-          }
+          onClick={() => setOpen(!open)}
           className="
             relative
             flex h-9 w-9
@@ -304,9 +250,7 @@ export default function FavouritesMenu({
             size={19}
             strokeWidth={1.5}
             className={
-              favourites.length > 0
-                ? "fill-[#5C28AD] text-[#5C28AD]"
-                : ""
+              favourites.length > 0 ? "fill-[#5C28AD] text-[#5C28AD]" : ""
             }
           />
 
@@ -345,47 +289,28 @@ export default function FavouritesMenu({
             "
           >
             <div className="px-5 py-5">
-
-              <FavouriteHeader
-                count={favourites.length}
-                onClose={closeMenu}
-              />
+              <FavouriteHeader count={favourites.length} onClose={closeMenu} />
 
               {favourites.length > 0 ? (
                 <div className="space-y-3">
-
-                  {favourites.map(
-                    (product) => (
-                      <FavouriteItem
-                        key={
-                          product.variationId
-                            ? `${product.id}-${product.variationId}`
-                            : product.id
-                        }
-                        product={product}
-                        onRemove={
-                          removeFavourite
-                        }
-                        onNavigate={
-                          closeMenu
-                        }
-                      />
-                    ),
-                  )}
-
+                  {favourites.map((product) => (
+                    <FavouriteItem
+                      key={
+                        product.variationId
+                          ? `${product.id}-${product.variationId}`
+                          : product.id
+                      }
+                      product={product}
+                      onRemove={removeFavourite}
+                      onNavigate={closeMenu}
+                    />
+                  ))}
                 </div>
               ) : (
                 <EmptyState />
               )}
 
-              {favourites.length > 0 && (
-                <ViewAllButton
-                  onClick={
-                    closeMenu
-                  }
-                />
-              )}
-
+              {favourites.length > 0 && <ViewAllButton onClick={closeMenu} />}
             </div>
           </div>
         )}
@@ -401,16 +326,13 @@ export default function FavouritesMenu({
 
   return (
     <div className="relative">
-
       {/* Heart button */}
 
       <button
         type="button"
         aria-label="Open favourites"
         aria-expanded={open}
-        onClick={() =>
-          setOpen(!open)
-        }
+        onClick={() => setOpen(!open)}
         className={`
           relative
           flex h-9 w-9
@@ -429,9 +351,7 @@ export default function FavouritesMenu({
           size={19}
           strokeWidth={1.5}
           className={
-            favourites.length > 0
-              ? "fill-[#5C28AD] text-[#5C28AD]"
-              : ""
+            favourites.length > 0 ? "fill-[#5C28AD] text-[#5C28AD]" : ""
           }
         />
 
@@ -474,34 +394,22 @@ export default function FavouritesMenu({
             shadow-[0_20px_50px_rgba(41,32,92,0.14)]
           "
         >
-
-          <FavouriteHeader
-            count={favourites.length}
-            onClose={closeMenu}
-          />
+          <FavouriteHeader count={favourites.length} onClose={closeMenu} />
 
           {favourites.length > 0 ? (
             <div className="max-h-[360px] overflow-y-auto">
-
-              {favourites.map(
-                (product) => (
-                  <FavouriteItem
-                    key={
-                      product.variationId
-                        ? `${product.id}-${product.variationId}`
-                        : product.id
-                    }
-                    product={product}
-                    onRemove={
-                      removeFavourite
-                    }
-                    onNavigate={
-                      closeMenu
-                    }
-                  />
-                ),
-              )}
-
+              {favourites.map((product) => (
+                <FavouriteItem
+                  key={
+                    product.variationId
+                      ? `${product.id}-${product.variationId}`
+                      : product.id
+                  }
+                  product={product}
+                  onRemove={removeFavourite}
+                  onNavigate={closeMenu}
+                />
+              ))}
             </div>
           ) : (
             <EmptyState />
@@ -509,19 +417,14 @@ export default function FavouritesMenu({
 
           {favourites.length > 0 && (
             <div className="border-t border-[#EEEAF3] p-3">
-              <ViewAllButton
-                onClick={closeMenu}
-              />
+              <ViewAllButton onClick={closeMenu} />
             </div>
           )}
-
         </div>
       )}
-
     </div>
   );
 }
-
 
 /*
  * =========================================
@@ -548,20 +451,14 @@ function FavouriteHeader({
         py-4
       "
     >
-
       <div>
-
         <p className="font-serif text-lg font-medium text-[#29205C]">
           Favourites
         </p>
 
         <p className="mt-0.5 text-[8px] uppercase tracking-[0.2em] text-[#9A91A4]">
-          {count}{" "}
-          {count === 1
-            ? "saved"
-            : "saved"}
+          {count} {count === 1 ? "saved" : "saved"}
         </p>
-
       </div>
 
       <button
@@ -578,16 +475,11 @@ function FavouriteHeader({
           hover:text-[#29205C]
         "
       >
-        <X
-          size={14}
-          strokeWidth={1.5}
-        />
+        <X size={14} strokeWidth={1.5} />
       </button>
-
     </div>
   );
 }
-
 
 /*
  * =========================================
@@ -601,9 +493,7 @@ function FavouriteItem({
   onNavigate,
 }: {
   product: FavouriteProduct;
-  onRemove: (
-    product: FavouriteProduct,
-  ) => void;
+  onRemove: (product: FavouriteProduct) => void;
   onNavigate: () => void;
 }) {
   /*
@@ -611,11 +501,7 @@ function FavouriteItem({
    * price data.
    */
   const price =
-    typeof product.price ===
-      "number" &&
-    Number.isFinite(
-      product.price,
-    )
+    typeof product.price === "number" && Number.isFinite(product.price)
       ? product.price
       : 0;
 
@@ -631,13 +517,11 @@ function FavouriteItem({
         last:border-0
       "
     >
-
       {/* =================================
           IMAGE
       ================================== */}
-
       <Link
-        href={`/catalogue/${product.id}`}
+        href={getFavouriteUrl(product)}
         onClick={onNavigate}
         className="
           relative
@@ -649,7 +533,6 @@ function FavouriteItem({
           bg-[#F5F2F7]
         "
       >
-
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
@@ -680,7 +563,6 @@ function FavouriteItem({
             No image
           </div>
         )}
-
       </Link>
 
       {/* =================================
@@ -688,9 +570,8 @@ function FavouriteItem({
       ================================== */}
 
       <div className="min-w-0 flex-1">
-
         <Link
-          href={`/catalogue/${product.id}`}
+          href={getFavouriteUrl(product)}
           onClick={onNavigate}
           className="
             block
@@ -726,7 +607,6 @@ function FavouriteItem({
 
         <p className="mt-1 text-[10px] font-medium text-[#6539B8]">
           ${price.toFixed(2)}
-
           {product.currency && (
             <span className="ml-1 text-[8px] text-[#9A91A4]">
               {product.currency}
@@ -737,9 +617,8 @@ function FavouriteItem({
         {/* Actions */}
 
         <div className="mt-2 flex items-center gap-3">
-
           <Link
-            href={`/catalogue/${product.id}`}
+            href={getFavouriteUrl(product)}
             onClick={onNavigate}
             className="
               flex
@@ -755,18 +634,12 @@ function FavouriteItem({
             "
           >
             View
-
-            <ArrowRight
-              size={9}
-              strokeWidth={1.4}
-            />
+            <ArrowRight size={9} strokeWidth={1.4} />
           </Link>
 
           <button
             type="button"
-            onClick={() =>
-              onRemove(product)
-            }
+            onClick={() => onRemove(product)}
             className="
               flex
               items-center
@@ -780,22 +653,14 @@ function FavouriteItem({
               hover:text-red-500
             "
           >
-            <Trash2
-              size={9}
-              strokeWidth={1.4}
-            />
-
+            <Trash2 size={9} strokeWidth={1.4} />
             Remove
           </button>
-
         </div>
-
       </div>
-
     </div>
   );
 }
-
 
 /*
  * =========================================
@@ -806,26 +671,18 @@ function FavouriteItem({
 function EmptyState() {
   return (
     <div className="px-6 py-10 text-center">
-
-      <Heart
-        size={22}
-        strokeWidth={1.2}
-        className="mx-auto text-[#C8C0D0]"
-      />
+      <Heart size={22} strokeWidth={1.2} className="mx-auto text-[#C8C0D0]" />
 
       <p className="mt-3 font-serif text-sm text-[#29205C]">
         No favourites yet
       </p>
 
       <p className="mt-1 text-[9px] leading-4 text-[#9A91A4]">
-        Save pieces you love and they&apos;ll
-        appear here.
+        Save pieces you love and they&apos;ll appear here.
       </p>
-
     </div>
   );
 }
-
 
 /*
  * =========================================
@@ -833,11 +690,7 @@ function EmptyState() {
  * =========================================
  */
 
-function ViewAllButton({
-  onClick,
-}: {
-  onClick: () => void;
-}) {
+function ViewAllButton({ onClick }: { onClick: () => void }) {
   return (
     <Link
       href="/favourites"
@@ -862,7 +715,6 @@ function ViewAllButton({
       "
     >
       View all favourites
-
       <ArrowRight
         size={11}
         strokeWidth={1.4}

@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Footer from "@/components/layout/Footer";
 
 type ProductVariation = {
@@ -52,6 +52,7 @@ const FAVOURITES_KEY = "lazuli-favourites";
 
 export default function ProductPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
 
   const [product, setProduct] = useState<Product | null>(null);
 
@@ -93,17 +94,64 @@ export default function ProductPage() {
     }
   }, [product, selectedVariationId]);
 
+  /*
+   * =========================================
+   * SELECT INITIAL VARIATION
+   * =========================================
+   *
+   * If the URL contains a variation ID, use it.
+   *
+   * This allows favourites to link directly to
+   * the exact variation that was saved.
+   *
+   * Example:
+   *
+   * /catalogue/product-id?variation=variation-id
+   *
+   * If no variation is supplied in the URL,
+   * default to the first available variation.
+   */
   useEffect(() => {
     if (!product || product.variations.length === 0) {
       return;
     }
 
+    const requestedVariationId = searchParams.get("variation");
+
+    /*
+     * Try to find the variation requested
+     * by the URL.
+     */
+    const requestedVariation = requestedVariationId
+      ? product.variations.find(
+          (variation) => variation.id === requestedVariationId,
+        )
+      : undefined;
+
+    /*
+     * If the URL points to a valid variation,
+     * select it.
+     *
+     * We allow this even if it is sold out so
+     * the user can still see which variation they
+     * originally saved.
+     */
+    if (requestedVariation) {
+      setSelectedVariationId(requestedVariation.id);
+
+      return;
+    }
+
+    /*
+     * Otherwise select the first variation
+     * currently in stock.
+     */
     const availableVariation = product.variations.find(
       (variation) => variation.stock > 0,
     );
 
     setSelectedVariationId(availableVariation?.id ?? product.variations[0].id);
-  }, [product]);
+  }, [product, searchParams]);
 
   function toggleFavourite() {
     if (!product || !selectedVariation) {
